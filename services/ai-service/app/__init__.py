@@ -1,0 +1,2 @@
+"""NEXUS WORLD AI service."""
+

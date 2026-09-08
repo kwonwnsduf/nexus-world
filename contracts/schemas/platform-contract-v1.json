@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexusworld.local/contracts/platform-contract-v1.json",
+  "$defs": {
+    "AiCapabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "service", "contractVersion", "capabilities"],
+      "properties": {
+        "status": { "const": "UP" },
+        "service": { "const": "ai-service" },
+        "contractVersion": { "const": "v1" },
+        "capabilities": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "PlatformStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "service", "contractVersion", "downstream"],
+      "properties": {
+        "status": { "const": "UP" },
+        "service": { "const": "core-api" },
+        "contractVersion": { "const": "v1" },
+        "downstream": { "$ref": "#/$defs/AiCapabilities" }
+      }
+    }
+  }
+}
+

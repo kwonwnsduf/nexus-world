@@ -1,0 +1,22 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "NEXUS WORLD AI Service", "version": "1.0.0" },
+  "paths": {
+    "/api/v1/platform/capabilities": {
+      "get": {
+        "operationId": "getAiCapabilities",
+        "responses": {
+          "200": {
+            "description": "AI service capabilities",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "../schemas/platform-contract-v1.json#/$defs/AiCapabilities" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

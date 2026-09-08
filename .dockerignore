@@ -1,0 +1,14 @@
+.git
+_git_hold
+.github
+.env
+node_modules
+**/node_modules
+**/.next
+**/target
+**/build
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+docs

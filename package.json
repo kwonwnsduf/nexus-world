@@ -1,0 +1,14 @@
+{
+  "name": "nexus-world",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "web:dev": "corepack pnpm --filter @nexus-world/web dev",
+    "web:lint": "corepack pnpm --filter @nexus-world/web lint",
+    "web:typecheck": "corepack pnpm --filter @nexus-world/web typecheck",
+    "web:test": "corepack pnpm --filter @nexus-world/web test",
+    "web:build": "corepack pnpm --filter @nexus-world/web build",
+    "contracts:check": "node scripts/validate-contracts.mjs"
+  }
+}
