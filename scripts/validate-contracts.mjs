@@ -17,6 +17,20 @@ for (const file of await readdir(path.join(contractRoot, "openapi"))) {
   if (requiredPath && !document.paths[requiredPath]?.get) {
     throw new Error(`${file} is missing GET ${requiredPath}`);
   }
+  if (file === "core-api-v1.json") {
+    if (!document.paths["/api/v1/auth/login"]?.post) {
+      throw new Error(`${file} is missing POST /api/v1/auth/login`);
+    }
+    if (!document.paths["/api/v1/auth/me"]?.get) {
+      throw new Error(`${file} is missing GET /api/v1/auth/me`);
+    }
+    if (!document.paths["/api/v1/auth/refresh"]?.post) {
+      throw new Error(`${file} is missing POST /api/v1/auth/refresh`);
+    }
+    if (!document.paths["/api/v1/auth/logout"]?.post) {
+      throw new Error(`${file} is missing POST /api/v1/auth/logout`);
+    }
+  }
 }
 
 const schema = JSON.parse(
@@ -27,4 +41,3 @@ if (!schema.$defs?.AiCapabilities || !schema.$defs?.PlatformStatus) {
 }
 
 console.log("Contract documents are valid.");
-

@@ -8,7 +8,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {
+            "spring.datasource.url=jdbc:h2:mem:application-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+            "spring.datasource.username=sa",
+            "spring.datasource.password=",
+            "spring.flyway.enabled=false",
+            "spring.jpa.hibernate.ddl-auto=none",
+            "nexus.auth.bootstrap.enabled=false"
+        })
 class NexusWorldApplicationTest {
     @LocalServerPort
     private int port;
@@ -25,4 +34,3 @@ class NexusWorldApplicationTest {
         assertThat(response).contains("\"service\":\"core-api\"");
     }
 }
-

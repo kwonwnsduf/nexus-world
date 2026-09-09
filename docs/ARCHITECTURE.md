@@ -1,4 +1,4 @@
-# Architecture v0.1
+# Architecture v0.3
 
 ## Deployable units
 
@@ -38,3 +38,20 @@ browser
 ```
 
 Each hop validates the versioned `v1` payload. The browser receives platform capability metadata through the web BFF and never calls an internal service directly. A downstream outage is converted into a bounded 502/503 response rather than hanging indefinitely.
+
+## Day 3 persistence foundation
+
+- Core API is the only owner of the transactional PostgreSQL schema.
+- Flyway migrations are forward-only, versioned SQL under `db/migration`, validated at every startup, and never clean a database at runtime.
+- Domain identifiers are application-generated UUIDs wrapped in aggregate-specific Java record types; database columns use PostgreSQL `UUID`.
+- The first migration establishes worlds, immutable world versions, scenario branches, and simulation runs. Later domain days extend the schema rather than editing an applied migration.
+- JSONB is limited to the versioned world snapshot payload; queryable lifecycle and relationship fields remain relational columns with constraints and indexes.
+
+## Day 4 authentication boundary
+
+- Core API is both the local credential authority and JWT issuer; no Cognito dependency exists.
+- Authentication uses a conventional Spring stack: a JPA `UserAccount` entity, `UserRepository extends JpaRepository`, `CustomUserDetailsService`, and `DaoAuthenticationProvider` with BCrypt.
+- `JwtTokenProvider` creates and parses HS256 tokens with JJWT. `JwtAuthenticationFilter` reads bearer tokens once per request and installs the authenticated principal in `SecurityContextHolder`.
+- PostgreSQL owns `users` and `user_roles`; raw passwords and JWTs are never persisted.
+- PostgreSQL also owns hashed refresh-token sessions and the bounded access-token blacklist. Raw tokens are never persisted.
+- Access tokens are short-lived; refresh tokens rotate as a family and reuse invalidates that family. Role authorization and access-token revocation are checked at the HTTP boundary.

@@ -1,6 +1,19 @@
 spring:
   application:
     name: nexus-world-core-api
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/nexusworld}
+    username: ${DATABASE_USER:nexusworld}
+    password: ${DATABASE_PASSWORD:nexusworld-local-only}
+    hikari:
+      maximum-pool-size: ${DATABASE_POOL_SIZE:10}
+  flyway:
+    clean-disabled: true
+    validate-on-migrate: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
   lifecycle:
     timeout-per-shutdown-phase: 10s
 
@@ -9,6 +22,16 @@ server:
   shutdown: graceful
 
 nexus:
+  auth:
+    issuer: ${JWT_ISSUER:nexus-world-core-api}
+    audience: ${JWT_AUDIENCE:nexus-world-api}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
+    refresh-token-ttl: ${JWT_REFRESH_TOKEN_TTL:7d}
+    secret-base64: ${JWT_SECRET_BASE64:bmV4dXMtd29ybGQtbG9jYWwtand0LXNlY3JldC0zMmJ5dGVzLQ==}
+    bootstrap:
+      enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
+      username: ${BOOTSTRAP_ADMIN_USERNAME:admin}
+      password: ${BOOTSTRAP_ADMIN_PASSWORD:nexus-world-local-admin}
   services:
     ai:
       base-url: ${AI_SERVICE_URL:http://localhost:8000}
