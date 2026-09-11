@@ -1,0 +1,91 @@
+name: nexus-world
+
+services:
+  web:
+    image: nexus-world-web:${IMAGE_TAG:?IMAGE_TAG is required}
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+    environment:
+      CORE_API_URL: http://core-api:8080
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      core-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+    restart: unless-stopped
+
+  core-api:
+    image: nexus-world-core-api:${IMAGE_TAG:?IMAGE_TAG is required}
+    build:
+      context: ../../services/core-api
+    environment:
+      SERVER_PORT: 8080
+      AI_SERVICE_URL: http://ai-service:8000
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+      DATABASE_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      JWT_ISSUER: ${JWT_ISSUER:-nexus-world-core-api}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-nexus-world-api}
+      JWT_ACCESS_TOKEN_TTL: ${JWT_ACCESS_TOKEN_TTL:-15m}
+      JWT_REFRESH_TOKEN_TTL: ${JWT_REFRESH_TOKEN_TTL:-7d}
+      JWT_SECRET_BASE64: ${JWT_SECRET_BASE64:?JWT_SECRET_BASE64 is required}
+      BOOTSTRAP_ADMIN_ENABLED: ${BOOTSTRAP_ADMIN_ENABLED:-true}
+      BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:?BOOTSTRAP_ADMIN_USERNAME is required}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?BOOTSTRAP_ADMIN_PASSWORD is required}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      ai-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  ai-service:
+    image: nexus-world-ai-service:${IMAGE_TAG:?IMAGE_TAG is required}
+    build:
+      context: ../../services/ai-service
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

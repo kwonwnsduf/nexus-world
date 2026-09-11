@@ -1,0 +1,11 @@
+aws_region           = "ap-northeast-2"
+instance_type        = "t3.medium"
+root_volume_size_gib = 30
+
+# Optional HTTPS and Route 53 configuration:
+# domain_name    = "demo.example.com"
+# route53_zone_id = "Z0123456789ABCDEFGHIJ"
+# tls_email       = "ops@example.com"
+
+# Restrict this if the demo must not be public.
+allowed_http_cidrs = ["0.0.0.0/0"]

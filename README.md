@@ -2,7 +2,7 @@
 
 Evidence-grounded economic civilization and supply-chain digital twin.
 
-## Day 4 services
+## Day 5 services
 
 | Service | URL | Health |
 |---|---|---|
@@ -24,6 +24,8 @@ Core API owns the PostgreSQL schema. Flyway applies the versioned migrations in
 `services/core-api/src/main/resources/db/migration` when the service starts.
 
 Core API also owns local JWT authentication. Compose creates an idempotent local-only administrator using the `BOOTSTRAP_ADMIN_*` values from `.env.example`. Login returns a short-lived access token and rotating refresh token; logout revokes the refresh family and blacklists the active access token. Cognito and OAuth login are not used.
+
+The first AWS deployment uses Terraform, one Amazon Linux EC2 instance, Docker Compose, and host Nginx. Only ports 80 and 443 are public; administration and deployments use AWS Systems Manager without SSH. Runtime secrets live in SSM Parameter Store, while release archives and encrypted PostgreSQL backups live in a private S3 bucket. See [docs/days/DAY-05.md](docs/days/DAY-05.md).
 
 ## Start from a clean clone
 

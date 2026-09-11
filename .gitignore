@@ -24,3 +24,11 @@ __pycache__/
 
 data/
 *.log
+
+# Terraform local state and downloaded providers
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform.tfvars
+crash.log
