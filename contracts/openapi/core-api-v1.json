@@ -1,6 +1,6 @@
 {
   "openapi": "3.1.0",
-  "info": { "title": "NEXUS WORLD Core API", "version": "1.2.0" },
+  "info": { "title": "NEXUS WORLD Core API", "version": "1.3.0" },
   "components": {
     "securitySchemes": {
       "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
@@ -157,6 +157,46 @@
           "401": { "description": "Missing, invalid, or expired access token" }
         }
       }
+    },
+    "/api/v1/sources": {
+      "post": { "operationId": "createSource", "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/CreateSource" } } } },
+        "responses": { "201": { "description": "Source registered", "content": { "application/json": { "schema": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/Source" } } } }, "400": { "description": "Invalid source" }, "409": { "description": "Duplicate source key" } } }
+    },
+    "/api/v1/sources/{id}": {
+      "get": { "operationId": "getSource", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Source", "content": { "application/json": { "schema": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/Source" } } } }, "404": { "description": "Source not found" } } }
+    },
+    "/api/v1/evidence": {
+      "post": { "operationId": "createEvidence", "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/CreateEvidence" } } } },
+        "responses": { "201": { "description": "Evidence registered", "content": { "application/json": { "schema": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/Evidence" } } } }, "400": { "description": "Invalid evidence" }, "404": { "description": "Source not found" } } }
+    },
+    "/api/v1/evidence/{id}": {
+      "get": { "operationId": "getEvidence", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Evidence", "content": { "application/json": { "schema": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/Evidence" } } } }, "404": { "description": "Evidence not found" } } }
+    },
+    "/api/v1/assumptions": {
+      "post": { "operationId": "createAssumption", "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/CreateAssumption" } } } },
+        "responses": { "201": { "description": "Assumption registered", "content": { "application/json": { "schema": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/Assumption" } } } }, "400": { "description": "Invalid assumption" }, "409": { "description": "Duplicate assumption key" } } }
+    },
+    "/api/v1/assumptions/{id}": {
+      "get": { "operationId": "getAssumption", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Assumption", "content": { "application/json": { "schema": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/Assumption" } } } }, "404": { "description": "Assumption not found" } } }
+    },
+    "/api/v1/provenance-links": {
+      "post": { "operationId": "createProvenanceLink", "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/CreateProvenanceLink" } } } },
+        "responses": { "201": { "description": "Provenance link registered", "content": { "application/json": { "schema": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/ProvenanceLink" } } } }, "400": { "description": "Exactly one origin is required" }, "404": { "description": "Origin not found" }, "409": { "description": "Duplicate link" } } },
+      "get": { "operationId": "getProvenanceLinks", "security": [{ "bearerAuth": [] }], "parameters": [
+          { "name": "subjectType", "in": "query", "required": true, "schema": { "type": "string", "minLength": 1 } },
+          { "name": "subjectId", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Ordered provenance links", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/ProvenanceLink" } } } } } } }
+    },
+    "/api/v1/provenance-links/{id}": {
+      "get": { "operationId": "getProvenanceLink", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Provenance link", "content": { "application/json": { "schema": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/ProvenanceLink" } } } }, "404": { "description": "Provenance link not found" } } }
     }
   }
 }

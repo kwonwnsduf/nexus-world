@@ -30,6 +30,9 @@ for (const file of await readdir(path.join(contractRoot, "openapi"))) {
     if (!document.paths["/api/v1/auth/logout"]?.post) {
       throw new Error(`${file} is missing POST /api/v1/auth/logout`);
     }
+    for (const path of ["/api/v1/sources", "/api/v1/evidence", "/api/v1/assumptions", "/api/v1/provenance-links"]) {
+      if (!document.paths[path]?.post) throw new Error(`${file} is missing POST ${path}`);
+    }
   }
 }
 
@@ -38,6 +41,13 @@ const schema = JSON.parse(
 );
 if (!schema.$defs?.AiCapabilities || !schema.$defs?.PlatformStatus) {
   throw new Error("platform-contract-v1.json is missing required definitions");
+}
+
+const provenanceSchema = JSON.parse(
+  await readFile(path.join(contractRoot, "schemas", "provenance-contract-v1.json"), "utf8"),
+);
+for (const definition of ["CreateSource", "Source", "CreateEvidence", "Evidence", "CreateAssumption", "Assumption", "CreateProvenanceLink", "ProvenanceLink"]) {
+  if (!provenanceSchema.$defs?.[definition]) throw new Error(`provenance-contract-v1.json is missing ${definition}`);
 }
 
 console.log("Contract documents are valid.");

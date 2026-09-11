@@ -2,7 +2,7 @@
 
 Evidence-grounded economic civilization and supply-chain digital twin.
 
-## Day 5 services
+## Day 6 services
 
 | Service | URL | Health |
 |---|---|---|
@@ -26,6 +26,10 @@ Core API owns the PostgreSQL schema. Flyway applies the versioned migrations in
 Core API also owns local JWT authentication. Compose creates an idempotent local-only administrator using the `BOOTSTRAP_ADMIN_*` values from `.env.example`. Login returns a short-lived access token and rotating refresh token; logout revokes the refresh family and blacklists the active access token. Cognito and OAuth login are not used.
 
 The first AWS deployment uses Terraform, one Amazon Linux EC2 instance, Docker Compose, and host Nginx. Only ports 80 and 443 are public; administration and deployments use AWS Systems Manager without SSH. Runtime secrets live in SSM Parameter Store, while release archives and encrypted PostgreSQL backups live in a private S3 bucket. See [docs/days/DAY-05.md](docs/days/DAY-05.md).
+
+Day 6 adds the append-oriented Source, Evidence, Assumption, and property-level Provenance Link foundation. It records
+which facts were observed, which values were assumed, who registered them, and how they map to later domain state. See
+[docs/days/DAY-06.md](docs/days/DAY-06.md) and [docs/DATA_CATALOG.md](docs/DATA_CATALOG.md).
 
 ## Start from a clean clone
 

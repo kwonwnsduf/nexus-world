@@ -146,6 +146,113 @@ class AuthSecurityIntegrationTest {
     }
 
     @Test
+    void provenanceResourcesAreTraceableValidatedAndRoleProtected() throws Exception {
+        String adminToken = login("admin", "nexus-world-local-admin");
+        String suffix = UUID.randomUUID().toString();
+        String sourceBody = mockMvc.perform(post("/api/v1/sources")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "sourceKey":"test:%s",
+                                  "sourceType":"DATASET",
+                                  "title":"Integration dataset",
+                                  "canonicalUri":"https://example.test/dataset",
+                                  "retrievedAt":"2026-09-11T00:00:00Z",
+                                  "metadata":{"country":"KR"}
+                                }
+                                """.formatted(suffix)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.contractVersion").value("v1"))
+                .andExpect(jsonPath("$.metadata.country").value("KR"))
+                .andReturn().getResponse().getContentAsString();
+        String sourceId = objectMapper.readTree(sourceBody).get("id").asText();
+
+        String evidenceBody = mockMvc.perform(post("/api/v1/evidence")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "sourceId":"%s",
+                                  "evidenceType":"MEASUREMENT",
+                                  "claimText":"Employment rate was 70 percent",
+                                  "locator":{"table":"employment","row":"total"},
+                                  "measuredValue":{"value":70,"unit":"percent"},
+                                  "confidence":0.95
+                                }
+                                """.formatted(sourceId)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String evidenceId = objectMapper.readTree(evidenceBody).get("id").asText();
+
+        String assumptionBody = mockMvc.perform(post("/api/v1/assumptions")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "assumptionKey":"labor.lag.%s",
+                                  "category":"LABOR",
+                                  "statement":"Employment reacts with a one-turn lag",
+                                  "rationale":"No direct observation is available",
+                                  "assumedValue":1,
+                                  "unit":"turn",
+                                  "status":"ACTIVE",
+                                  "confidence":0.6
+                                }
+                                """.formatted(suffix)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String assumptionId = objectMapper.readTree(assumptionBody).get("id").asText();
+        String subjectId = UUID.randomUUID().toString();
+
+        String linkBody = mockMvc.perform(post("/api/v1/provenance-links")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"subjectType":"WORLD_VERSION","subjectId":"%s","propertyPath":"/labor/employmentRate",
+                                 "evidenceId":"%s","transformation":{"method":"weighted_mean"}}
+                                """.formatted(subjectId, evidenceId)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String linkId = objectMapper.readTree(linkBody).get("id").asText();
+        mockMvc.perform(post("/api/v1/provenance-links")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"subjectType":"WORLD_VERSION","subjectId":"%s","propertyPath":"/labor/transitionLag",
+                                 "assumptionId":"%s"}
+                                """.formatted(subjectId, assumptionId)))
+                .andExpect(status().isCreated());
+
+        String viewerToken = login("viewer", VIEWER_PASSWORD);
+        mockMvc.perform(get("/api/v1/provenance-links/" + linkId)
+                        .header("Authorization", "Bearer " + viewerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.evidenceId").value(evidenceId));
+        mockMvc.perform(get("/api/v1/provenance-links")
+                        .param("subjectType", "WORLD_VERSION").param("subjectId", subjectId)
+                        .header("Authorization", "Bearer " + viewerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+        mockMvc.perform(post("/api/v1/sources")
+                        .header("Authorization", "Bearer " + viewerToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"sourceKey":"forbidden:%s","sourceType":"USER_INPUT","title":"Forbidden write",
+                                 "retrievedAt":"2026-09-11T00:00:00Z"}
+                                """.formatted(suffix)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/v1/provenance-links")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"subjectType":"WORLD_VERSION","subjectId":"%s","propertyPath":"/invalid",
+                                 "evidenceId":"%s","assumptionId":"%s"}
+                                """.formatted(subjectId, evidenceId, assumptionId)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void refreshTokenRotatesAndReuseRevokesTheWholeFamily() throws Exception {
         JsonNode first = loginResponse("viewer", VIEWER_PASSWORD);
         String oldRefreshToken = first.get("refreshToken").asText();

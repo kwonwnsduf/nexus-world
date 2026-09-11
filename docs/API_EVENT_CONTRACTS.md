@@ -8,3 +8,9 @@
 
 Contract changes are committed under `contracts/` and validated before dependent implementation changes.
 
+## Provenance v1
+
+Day 6 adds append-oriented `/api/v1/sources`, `/api/v1/evidence`, `/api/v1/assumptions`, and
+`/api/v1/provenance-links` contracts. Writes require analyst-or-higher authority; authenticated viewers may resolve a
+provenance chain. Each link addresses a domain property with a JSON Pointer and has exactly one evidence or assumption
+origin. Payload definitions are versioned in `contracts/schemas/provenance-contract-v1.json`.
