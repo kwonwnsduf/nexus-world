@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexusworld.local/contracts/ontology-contract-v1.json",
+  "$defs": {
+    "EntityType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "domain", "displayName", "description", "requiredAttributes", "aggregateOnly"],
+      "properties": {
+        "code": { "type": "string" },
+        "domain": { "type": "string" },
+        "displayName": { "type": "string" },
+        "description": { "type": "string" },
+        "requiredAttributes": { "type": "array", "items": { "type": "string" } },
+        "aggregateOnly": { "type": "boolean" }
+      }
+    },
+    "RelationshipType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "sourceType", "targetType", "description", "temporal"],
+      "properties": {
+        "code": { "type": "string" },
+        "sourceType": { "type": "string" },
+        "targetType": { "type": "string" },
+        "description": { "type": "string" },
+        "temporal": { "type": "boolean" }
+      }
+    },
+    "PropertyDataType": {
+      "enum": ["STRING", "INTEGER", "NUMBER", "BOOLEAN", "DATE", "DATE_TIME", "UUID", "URI", "OBJECT", "ARRAY"]
+    },
+    "PropertyType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entityType", "code", "displayName", "description", "dataType", "required", "unit", "classification"],
+      "properties": {
+        "entityType": { "type": "string" },
+        "code": { "type": "string" },
+        "displayName": { "type": "string" },
+        "description": { "type": "string" },
+        "dataType": { "$ref": "#/$defs/PropertyDataType" },
+        "required": { "type": "boolean" },
+        "unit": { "type": ["string", "null"] },
+        "classification": { "type": ["string", "null"] }
+      }
+    },
+    "ActionType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "actorType", "targetType", "description", "parametersSchema"],
+      "properties": {
+        "code": { "type": "string" },
+        "actorType": { "type": "string" },
+        "targetType": { "type": "string" },
+        "description": { "type": "string" },
+        "parametersSchema": { "type": "object" }
+      }
+    },
+    "ValidateAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actionCode", "actorType", "targetType", "parameters"],
+      "properties": {
+        "actionCode": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "actorType": { "type": "string", "minLength": 1, "maxLength": 48 },
+        "targetType": { "type": "string", "minLength": 1, "maxLength": 48 },
+        "parameters": { "type": "object" }
+      }
+    },
+    "ActionValidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractVersion", "actionCode", "actorType", "targetType", "valid", "errors"],
+      "properties": {
+        "contractVersion": { "const": "v1" },
+        "actionCode": { "type": "string" },
+        "actorType": { "type": "string" },
+        "targetType": { "type": "string" },
+        "valid": { "type": "boolean" },
+        "errors": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "CreateGraphEntity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entityType", "naturalKey", "displayName"],
+      "properties": {
+        "entityType": { "type": "string", "minLength": 1, "maxLength": 48 },
+        "naturalKey": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "attributes": { "type": "object" },
+        "validFrom": { "type": ["string", "null"], "format": "date-time" },
+        "validTo": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "GraphEntity": {
+      "allOf": [
+        { "$ref": "#/$defs/CreateGraphEntity" },
+        {
+          "type": "object",
+          "required": ["contractVersion", "id", "worldVersionId", "createdBy", "createdAt"],
+          "properties": {
+            "contractVersion": { "const": "v1" },
+            "id": { "type": "string", "format": "uuid" },
+            "worldVersionId": { "type": "string", "format": "uuid" },
+            "createdBy": { "type": "string", "format": "uuid" },
+            "createdAt": { "type": "string", "format": "date-time" }
+          }
+        }
+      ]
+    },
+    "CreateGraphRelationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relationshipType", "sourceEntityId", "targetEntityId"],
+      "properties": {
+        "relationshipType": { "type": "string", "minLength": 1, "maxLength": 48 },
+        "sourceEntityId": { "type": "string", "format": "uuid" },
+        "targetEntityId": { "type": "string", "format": "uuid" },
+        "attributes": { "type": "object" },
+        "validFrom": { "type": ["string", "null"], "format": "date-time" },
+        "validTo": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "GraphRelationship": {
+      "allOf": [
+        { "$ref": "#/$defs/CreateGraphRelationship" },
+        {
+          "type": "object",
+          "required": ["contractVersion", "id", "worldVersionId", "sourceEntityType", "targetEntityType", "createdBy", "createdAt"],
+          "properties": {
+            "contractVersion": { "const": "v1" },
+            "id": { "type": "string", "format": "uuid" },
+            "worldVersionId": { "type": "string", "format": "uuid" },
+            "sourceEntityType": { "type": "string" },
+            "targetEntityType": { "type": "string" },
+            "createdBy": { "type": "string", "format": "uuid" },
+            "createdAt": { "type": "string", "format": "date-time" }
+          }
+        }
+      ]
+    },
+    "Ontology": {
+      "type": "object",
+      "required": ["contractVersion", "ontologyVersion", "entityTypes", "propertyTypes", "relationshipTypes", "actionTypes"],
+      "properties": {
+        "contractVersion": { "const": "v1" },
+        "ontologyVersion": { "const": "economic-civilization-v1" },
+        "entityTypes": { "type": "array", "items": { "$ref": "#/$defs/EntityType" } },
+        "propertyTypes": { "type": "array", "items": { "$ref": "#/$defs/PropertyType" } },
+        "relationshipTypes": { "type": "array", "items": { "$ref": "#/$defs/RelationshipType" } },
+        "actionTypes": { "type": "array", "items": { "$ref": "#/$defs/ActionType" } }
+      }
+    },
+    "WorldGraph": {
+      "type": "object",
+      "required": ["contractVersion", "ontologyVersion", "worldVersionId", "entities", "relationships"],
+      "properties": {
+        "contractVersion": { "const": "v1" },
+        "ontologyVersion": { "const": "economic-civilization-v1" },
+        "worldVersionId": { "type": "string", "format": "uuid" },
+        "entities": { "type": "array", "items": { "$ref": "#/$defs/GraphEntity" } },
+        "relationships": { "type": "array", "items": { "$ref": "#/$defs/GraphRelationship" } }
+      }
+    }
+  }
+}

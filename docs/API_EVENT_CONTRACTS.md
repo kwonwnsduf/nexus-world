@@ -8,6 +8,13 @@
 
 Contract changes are committed under `contracts/` and validated before dependent implementation changes.
 
+## Ontology v1
+
+`GET /api/v1/ontology` returns Entity, Property, Relationship, and Action Type catalogs. Property definitions drive
+validation of values stored in graph-entity `attributes` JSONB. `POST /api/v1/ontology/actions/validate` checks an
+Action's actor/target types and parameters without persisting or executing the Action. World graph creation and reads
+remain under `/api/v1/world-versions/{versionId}/graph`.
+
 ## Provenance v1
 
 Day 6 adds append-oriented `/api/v1/sources`, `/api/v1/evidence`, `/api/v1/assumptions`, and

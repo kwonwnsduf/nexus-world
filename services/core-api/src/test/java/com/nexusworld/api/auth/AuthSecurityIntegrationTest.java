@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -66,6 +67,9 @@ class AuthSecurityIntegrationTest {
 
     @Autowired
     private Clock clock;
+
+    @Autowired
+    private JdbcTemplate jdbc;
 
     @BeforeEach
     void createViewer() {
@@ -250,6 +254,97 @@ class AuthSecurityIntegrationTest {
                                  "evidenceId":"%s","assumptionId":"%s"}
                                 """.formatted(subjectId, evidenceId, assumptionId)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void economicCivilizationGraphEnforcesSemanticsPrivacyAndRoles() throws Exception {
+        String adminToken=login("admin","nexus-world-local-admin");
+        UUID worldId=UUID.randomUUID(),versionId=UUID.randomUUID();
+        jdbc.update("INSERT INTO worlds (id,name) VALUES (?,?)",worldId,"Ontology integration world");
+        jdbc.update("INSERT INTO world_versions (id,world_id,version_number) VALUES (?,?,?)",versionId,worldId,1);
+
+        mockMvc.perform(get("/api/v1/ontology").header("Authorization","Bearer "+adminToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.ontologyVersion").value("economic-civilization-v1"))
+                .andExpect(jsonPath("$.entityTypes[?(@.code == 'COMPANY')]").exists())
+                .andExpect(jsonPath("$.propertyTypes[?(@.entityType == 'COMPANY' && @.code == 'industryCode')]").exists())
+                .andExpect(jsonPath("$.relationshipTypes[?(@.code == 'EMPLOYS')]").exists())
+                .andExpect(jsonPath("$.actionTypes[?(@.code == 'REDUCE_PRODUCTION')]").exists());
+
+        mockMvc.perform(post("/api/v1/ontology/actions/validate")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "actionCode": "REDUCE_PRODUCTION",
+                                  "actorType": "COMPANY",
+                                  "targetType": "FACILITY",
+                                  "parameters": {"reductionRatio": 0.25}
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(true))
+                .andExpect(jsonPath("$.errors.length()").value(0));
+
+        mockMvc.perform(post("/api/v1/ontology/actions/validate")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "actionCode": "REDUCE_PRODUCTION",
+                                  "actorType": "BANK",
+                                  "targetType": "FACILITY",
+                                  "parameters": {"reductionRatio": 2}
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(false))
+                .andExpect(jsonPath("$.errors.length()").value(2));
+
+        mockMvc.perform(post("/api/v1/world-versions/"+versionId+"/graph/entities")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "entityType": "DEMOGRAPHIC_COHORT",
+                                  "naturalKey": "kr:cohort:invalid-year",
+                                  "displayName": "Invalid cohort",
+                                  "attributes": {
+                                    "populationModelId": "kr-2025-v1",
+                                    "baseYear": "2025",
+                                    "weight": 100
+                                  }
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        String companyBody=mockMvc.perform(post("/api/v1/world-versions/"+versionId+"/graph/entities")
+                .header("Authorization","Bearer "+adminToken).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"entityType":"COMPANY","naturalKey":"kr:company:005930","displayName":"Semiconductor Company","attributes":{"jurisdiction":"KR","industryCode":"C26"}}
+                        """)).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String cohortBody=mockMvc.perform(post("/api/v1/world-versions/"+versionId+"/graph/entities")
+                .header("Authorization","Bearer "+adminToken).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"entityType":"DEMOGRAPHIC_COHORT","naturalKey":"kr:cohort:engineers","displayName":"Semiconductor engineers","attributes":{"populationModelId":"kr-2025-v1","baseYear":2025,"weight":12500}}
+                        """)).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String companyId=objectMapper.readTree(companyBody).get("id").asText(),cohortId=objectMapper.readTree(cohortBody).get("id").asText();
+
+        mockMvc.perform(post("/api/v1/world-versions/"+versionId+"/graph/relationships")
+                .header("Authorization","Bearer "+adminToken).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"relationshipType\":\"EMPLOYS\",\"sourceEntityId\":\""+companyId+"\",\"targetEntityId\":\""+cohortId+"\",\"attributes\":{\"jobs\":4200}}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.sourceEntityType").value("COMPANY"));
+        mockMvc.perform(post("/api/v1/world-versions/"+versionId+"/graph/relationships")
+                .header("Authorization","Bearer "+adminToken).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"relationshipType\":\"LENDS_TO\",\"sourceEntityId\":\""+companyId+"\",\"targetEntityId\":\""+cohortId+"\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/v1/world-versions/"+versionId+"/graph/entities")
+                .header("Authorization","Bearer "+adminToken).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"entityType":"DEMOGRAPHIC_COHORT","naturalKey":"unsafe","displayName":"Unsafe","attributes":{"populationModelId":"x","baseYear":2025,"weight":1,"email":"person@example.test"}}
+                        """)).andExpect(status().isBadRequest());
+
+        String viewerToken=login("viewer",VIEWER_PASSWORD);
+        mockMvc.perform(get("/api/v1/world-versions/"+versionId+"/graph").header("Authorization","Bearer "+viewerToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.entities.length()").value(2)).andExpect(jsonPath("$.relationships.length()").value(1));
+        mockMvc.perform(post("/api/v1/world-versions/"+versionId+"/graph/entities").header("Authorization","Bearer "+viewerToken)
+                .contentType(MediaType.APPLICATION_JSON).content("{}" )).andExpect(status().isForbidden());
     }
 
     @Test

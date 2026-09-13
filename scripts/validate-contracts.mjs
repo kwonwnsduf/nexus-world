@@ -33,6 +33,11 @@ for (const file of await readdir(path.join(contractRoot, "openapi"))) {
     for (const path of ["/api/v1/sources", "/api/v1/evidence", "/api/v1/assumptions", "/api/v1/provenance-links"]) {
       if (!document.paths[path]?.post) throw new Error(`${file} is missing POST ${path}`);
     }
+    if (!document.paths["/api/v1/ontology"]?.get) throw new Error(`${file} is missing GET /api/v1/ontology`);
+    if (!document.paths["/api/v1/ontology/actions/validate"]?.post) {
+      throw new Error(`${file} is missing POST /api/v1/ontology/actions/validate`);
+    }
+    if (!document.paths["/api/v1/world-versions/{versionId}/graph"]?.get) throw new Error(`${file} is missing world graph read contract`);
   }
 }
 
@@ -48,6 +53,25 @@ const provenanceSchema = JSON.parse(
 );
 for (const definition of ["CreateSource", "Source", "CreateEvidence", "Evidence", "CreateAssumption", "Assumption", "CreateProvenanceLink", "ProvenanceLink"]) {
   if (!provenanceSchema.$defs?.[definition]) throw new Error(`provenance-contract-v1.json is missing ${definition}`);
+}
+
+const ontologySchema = JSON.parse(await readFile(path.join(contractRoot, "schemas", "ontology-contract-v1.json"), "utf8"));
+for (const definition of [
+  "PropertyDataType",
+  "EntityType",
+  "RelationshipType",
+  "PropertyType",
+  "ActionType",
+  "ValidateAction",
+  "ActionValidation",
+  "CreateGraphEntity",
+  "GraphEntity",
+  "CreateGraphRelationship",
+  "GraphRelationship",
+  "Ontology",
+  "WorldGraph",
+]) {
+  if (!ontologySchema.$defs?.[definition]) throw new Error(`ontology-contract-v1.json is missing ${definition}`);
 }
 
 console.log("Contract documents are valid.");

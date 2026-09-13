@@ -38,7 +38,7 @@ class DatabaseMigrationIntegrationTest {
         MigrateResult firstRun = flyway.migrate();
         MigrateResult secondRun = flyway.migrate();
 
-        assertThat(firstRun.migrationsExecuted).isEqualTo(4);
+        assertThat(firstRun.migrationsExecuted).isEqualTo(6);
         assertThat(secondRun.migrationsExecuted).isZero();
         assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 
@@ -97,6 +97,59 @@ class DatabaseMigrationIntegrationTest {
                     "INSERT INTO provenance_links (id, subject_type, subject_id, property_path, evidence_id, assumption_id, created_by) VALUES (?, 'WORLD_VERSION', ?, '/metric', ?, ?, ?)",
                     UUID.randomUUID(), UUID.randomUUID(), evidenceId, assumptionId, actorId))
                     .hasMessageContaining("provenance_links_exactly_one_origin");
+        }
+    }
+
+    @Test
+    @Order(3)
+    void ontologyConstraintsRejectInvalidEndpointTypesAndCrossWorldEdges() throws Exception {
+        Flyway.configure().dataSource(POSTGRES.getJdbcUrl(),POSTGRES.getUsername(),POSTGRES.getPassword()).load().migrate();
+        UUID actor=UUID.randomUUID(),worldA=UUID.randomUUID(),worldB=UUID.randomUUID(),versionA=UUID.randomUUID(),versionB=UUID.randomUUID();
+        UUID company=UUID.randomUUID(),cohort=UUID.randomUUID(),foreignBank=UUID.randomUUID();
+        try(Connection connection=POSTGRES.createConnection("")){
+            execute(connection,"INSERT INTO users (id,username,normalized_username,password_hash) VALUES (?,?,?,?)",actor,"ontology-"+actor,"ontology-"+actor,"unused");
+            execute(connection,"INSERT INTO worlds (id,name) VALUES (?,?)",worldA,"World A");
+            execute(connection,"INSERT INTO worlds (id,name) VALUES (?,?)",worldB,"World B");
+            execute(connection,"INSERT INTO world_versions (id,world_id,version_number) VALUES (?,?,1)",versionA,worldA);
+            execute(connection,"INSERT INTO world_versions (id,world_id,version_number) VALUES (?,?,1)",versionB,worldB);
+            execute(connection,"INSERT INTO world_graph_entities (id,world_version_id,entity_type,natural_key,display_name,attributes,created_by) VALUES (?,?, 'COMPANY','company:test','Test Company','{\"jurisdiction\":\"KR\",\"industryCode\":\"C26\"}'::jsonb,?)",company,versionA,actor);
+            execute(connection,"INSERT INTO world_graph_entities (id,world_version_id,entity_type,natural_key,display_name,attributes,created_by) VALUES (?,?, 'DEMOGRAPHIC_COHORT','cohort:test','Worker cohort','{\"populationModelId\":\"kr-2025\",\"baseYear\":2025,\"weight\":1000}'::jsonb,?)",cohort,versionA,actor);
+            execute(connection,"INSERT INTO world_graph_entities (id,world_version_id,entity_type,natural_key,display_name,attributes,created_by) VALUES (?,?, 'BANK','bank:test','Foreign bank','{\"jurisdiction\":\"US\"}'::jsonb,?)",foreignBank,versionB,actor);
+            execute(connection,"INSERT INTO world_graph_relationships (id,world_version_id,relationship_type,source_entity_id,source_entity_type,target_entity_id,target_entity_type,created_by) VALUES (?,?, 'EMPLOYS',?,'COMPANY',?,'DEMOGRAPHIC_COHORT',?)",UUID.randomUUID(),versionA,company,cohort,actor);
+            assertThatThrownBy(()->execute(connection,"INSERT INTO world_graph_relationships (id,world_version_id,relationship_type,source_entity_id,source_entity_type,target_entity_id,target_entity_type,created_by) VALUES (?,?, 'LENDS_TO',?,'COMPANY',?,'DEMOGRAPHIC_COHORT',?)",UUID.randomUUID(),versionA,company,cohort,actor)).hasMessageContaining("world_graph_relationship_definition_fk");
+            assertThatThrownBy(()->execute(connection,"INSERT INTO world_graph_relationships (id,world_version_id,relationship_type,source_entity_id,source_entity_type,target_entity_id,target_entity_type,created_by) VALUES (?,?, 'LENDS_TO',?,'BANK',?,'COMPANY',?)",UUID.randomUUID(),versionA,foreignBank,company,actor)).hasMessageContaining("world_graph_relationship_source_fk");
+        }
+    }
+
+    @Test
+    @Order(4)
+    void ontologyPropertyAndActionCatalogConstraintsAreEnforced() throws Exception {
+        Flyway.configure()
+                .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+                .load()
+                .migrate();
+
+        try (Connection connection = POSTGRES.createConnection("")) {
+            assertThatThrownBy(() -> execute(
+                    connection,
+                    "INSERT INTO ontology_property_types "
+                            + "(entity_type,code,display_name,description,data_type) "
+                            + "VALUES ('COMPANY','invalid','Invalid','Invalid type','MONEY')"))
+                    .hasMessageContaining("ontology_property_data_type_valid");
+
+            assertThatThrownBy(() -> execute(
+                    connection,
+                    "INSERT INTO ontology_action_types "
+                            + "(code,actor_type,target_type,description,parameters_schema) "
+                            + "VALUES ('INVALID_SCHEMA','COMPANY','FACILITY','Invalid','[]'::jsonb)"))
+                    .hasMessageContaining("ontology_action_parameters_object");
+
+            assertThatThrownBy(() -> execute(
+                    connection,
+                    "INSERT INTO ontology_action_types "
+                            + "(code,actor_type,target_type,description) "
+                            + "VALUES ('INVALID_ACTOR','UNKNOWN','FACILITY','Invalid')"))
+                    .hasMessageContaining("ontology_action_types_actor_type_fkey");
         }
     }
 
