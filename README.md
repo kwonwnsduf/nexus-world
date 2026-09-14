@@ -31,6 +31,24 @@ Day 6 adds the append-oriented Source, Evidence, Assumption, and property-level 
 which facts were observed, which values were assumed, who registered them, and how they map to later domain state. See
 [docs/days/DAY-06.md](docs/days/DAY-06.md) and [docs/DATA_CATALOG.md](docs/DATA_CATALOG.md).
 
+Days 8-13 add production-shaped external ingestion for SEC, OpenDART, UN Comtrade, World Bank, USGS, UN/LOCODE, WPI,
+HS, ISIC, UN WPP, ILOSTAT, KOSIS, and OECD. Configure credentials in an untracked `.env`, log in as an administrator,
+then start a source run through `POST /api/v1/admin/ingestions/{source}`. For example:
+
+```json
+{
+  "parameters": {
+    "cik": "0000320193",
+    "includeCompanyFacts": true
+  }
+}
+```
+
+Run status is available from `GET /api/v1/admin/ingestions/{id}`. Exact raw payloads, canonical rows, rejected rows, and
+credential-redacted provenance are stored separately. Live network tests are opt-in with
+`RUN_LIVE_INGESTION_TESTS=true`; fixture tests always run in CI. Day 14 entity resolution and Neo4j loading are not part
+of this implementation. See [docs/DATA_CATALOG.md](docs/DATA_CATALOG.md).
+
 ## Start from a clean clone
 
 ```powershell

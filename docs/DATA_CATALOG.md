@@ -52,3 +52,29 @@ versioned records. Evidence and assumptions are protected by foreign keys, and a
 - `ANALYST`, `OPERATOR`, and `ADMIN` may register provenance; every authenticated role may read it.
 - Deletes and mutation endpoints are deliberately absent. Retention and audited correction are introduced with the
   later audit lifecycle rather than destroying provenance.
+
+## External ingestion catalog (Days 8-13)
+
+Every retrieval creates an `ingestion_runs` audit record. Exact response bytes are retained in
+`raw_ingestion_payloads`; canonical observations are stored separately in `normalized_external_records`. A normalized
+row points to its raw payload and carries the redacted request URI, SHA-256, adapter name, and transformation version.
+Invalid rows are quarantined in `ingestion_rejections` instead of being silently discarded.
+
+| Source | Transport | Canonical record | Required request parameters |
+|---|---|---|---|
+| SEC | EDGAR submissions JSON | `SEC_FILING` | `cik` |
+| OpenDART | disclosure list JSON | `OPENDART_FILING` | `startDate`, `endDate`; optional `corpCode` |
+| UN Comtrade | trade API JSON | `TRADE_FLOW` | `reporterCode`, `period`; optional partner/flow/HS code |
+| World Bank | Indicators API v2 JSON | `MACRO_INDICATOR` | `country`, `indicator`; optional `date` |
+| USGS | FDSN GeoJSON | `EARTHQUAKE` | `startTime`, `endTime`; optional magnitude |
+| UN/LOCODE | official ZIP/CSV | `LOCATION_CODE` | optional release `version` |
+| WPI | official CSV | `PORT` | optional data `version` |
+| HS | official JSON classification | `HS_CLASSIFICATION` | optional `version` |
+| ISIC | official CSV classification | `ISIC_CLASSIFICATION` | optional `version` |
+| UN WPP | official bulk CSV/GZIP | `POPULATION_TARGET` | optional `version` |
+| ILOSTAT | bulk CSV/GZIP | `LABOR_INDICATOR` | `dataset` |
+| KOSIS | statistics OpenAPI JSON | `KOREAN_STATISTIC` | `userStatsId`, `orgId`, `tableId`, start/end period |
+| OECD | SDMX-CSV | `OECD_STATISTIC` | `flowRef`; optional key/start/end period |
+
+Credentials are injected from the environment and are redacted before request URIs are persisted. Country code scheme,
+classification/version, currency, unit, period, data version, source-native dimensions, and source record are preserved.

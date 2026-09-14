@@ -35,6 +35,29 @@ nexus:
   services:
     ai:
       base-url: ${AI_SERVICE_URL:http://localhost:8000}
+  ingestion:
+    connect-timeout: ${EXTERNAL_DATA_CONNECT_TIMEOUT:5s}
+    request-timeout: ${EXTERNAL_DATA_REQUEST_TIMEOUT:120s}
+    max-attempts: ${EXTERNAL_DATA_MAX_ATTEMPTS:4}
+    max-payload-bytes: ${EXTERNAL_DATA_MAX_PAYLOAD_BYTES:52428800}
+    sec-user-agent: ${SEC_USER_AGENT:}
+    opendart-api-key: ${OPENDART_API_KEY:}
+    un-comtrade-api-key: ${UN_COMTRADE_API_KEY:}
+    kosis-api-key: ${KOSIS_API_KEY:}
+    endpoints:
+      sec: ${SEC_BASE_URL:https://data.sec.gov}
+      opendart: ${OPENDART_BASE_URL:https://opendart.fss.or.kr}
+      un-comtrade: ${UN_COMTRADE_BASE_URL:https://comtradeapi.un.org}
+      world-bank: ${WORLD_BANK_BASE_URL:https://api.worldbank.org/v2}
+      usgs: ${USGS_BASE_URL:https://earthquake.usgs.gov/fdsnws/event/1}
+      unlocode: ${UNLOCODE_DOWNLOAD_URL:https://service.unece.org/trade/locode/loc251csv.zip}
+      wpi: ${WPI_DOWNLOAD_URL:https://msi.nga.mil/api/publications/download?key=16920957/SFH00000/UpdatedPub150.csv&type=view}
+      hs: ${HS_DOWNLOAD_URL:https://comtradeapi.un.org/files/v1/app/reference/HS.json}
+      isic: ${ISIC_DOWNLOAD_URL:https://unstats.un.org/unsd/classifications/Econ/Download/In%20Text/ISIC_Rev_4_english_structure.Txt}
+      un-wpp: ${UN_WPP_DOWNLOAD_URL:https://population.un.org/wpp/assets/Excel%20Files/1_Indicator%20(Standard)/CSV_FILES/WPP2024_Demographic_Indicators_Medium.csv.gz}
+      ilostat: ${ILOSTAT_BASE_URL:https://rplumber.ilo.org/data/indicator}
+      kosis: ${KOSIS_BASE_URL:https://kosis.kr/openapi}
+      oecd: ${OECD_SDMX_BASE_URL:https://sdmx.oecd.org/public/rest}
 
 management:
   endpoints:

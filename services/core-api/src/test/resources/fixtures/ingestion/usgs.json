@@ -1,0 +1,1 @@
+{"type":"FeatureCollection","metadata":{"api":"1.14.1"},"features":[{"type":"Feature","id":"us7000test","properties":{"mag":6.2,"place":"Taiwan region","time":1712016000000,"net":"us","type":"earthquake"},"geometry":{"type":"Point","coordinates":[121.5,23.8,15.2]}}]}

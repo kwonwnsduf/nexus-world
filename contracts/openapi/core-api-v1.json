@@ -1,6 +1,6 @@
 {
   "openapi": "3.1.0",
-  "info": { "title": "NEXUS WORLD Core API", "version": "1.4.0" },
+  "info": { "title": "NEXUS WORLD Core API", "version": "1.5.0" },
   "components": {
     "securitySchemes": {
       "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
@@ -197,6 +197,15 @@
     "/api/v1/provenance-links/{id}": {
       "get": { "operationId": "getProvenanceLink", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
         "responses": { "200": { "description": "Provenance link", "content": { "application/json": { "schema": { "$ref": "../schemas/provenance-contract-v1.json#/$defs/ProvenanceLink" } } } }, "404": { "description": "Provenance link not found" } } }
+    },
+    "/api/v1/admin/ingestions": {
+      "get": { "operationId": "listRecentIngestionRuns", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Recent ingestion runs", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "../schemas/ingestion-contract-v1.json#/$defs/IngestionResult" } } } } }, "403": { "description": "Admin role required" } } }
+    },
+    "/api/v1/admin/ingestions/{source}": {
+      "post": { "operationId": "startExternalDataIngestion", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "source", "in": "path", "required": true, "schema": { "$ref": "../schemas/ingestion-contract-v1.json#/$defs/SourceSystem" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/ingestion-contract-v1.json#/$defs/StartIngestion" } } } }, "responses": { "201": { "description": "Ingestion completed", "content": { "application/json": { "schema": { "$ref": "../schemas/ingestion-contract-v1.json#/$defs/IngestionResult" } } } }, "400": { "description": "Invalid parameters or source failure" }, "403": { "description": "Admin role required" } } }
+    },
+    "/api/v1/admin/ingestions/{id}": {
+      "get": { "operationId": "getIngestionRun", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "responses": { "200": { "description": "Ingestion result", "content": { "application/json": { "schema": { "$ref": "../schemas/ingestion-contract-v1.json#/$defs/IngestionResult" } } } }, "403": { "description": "Admin role required" }, "404": { "description": "Run not found" } } }
     },
     "/api/v1/ontology": {
       "get": { "operationId": "getEconomicCivilizationOntology", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Versioned ontology", "content": { "application/json": { "schema": { "$ref": "../schemas/ontology-contract-v1.json#/$defs/Ontology" } } } } } }

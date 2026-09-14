@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-world.local/contracts/ingestion-contract-v1.json",
+  "$defs": {
+    "SourceSystem": {
+      "enum": ["SEC", "OPENDART", "UN_COMTRADE", "WORLD_BANK", "USGS", "UNLOCODE", "WPI", "HS", "ISIC", "UN_WPP", "ILOSTAT", "KOSIS", "OECD"]
+    },
+    "StartIngestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parameters"],
+      "properties": { "parameters": { "type": "object" } }
+    },
+    "IngestionResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runId", "source", "status", "startedAt", "pagesFetched", "rawRecords", "normalizedRecords", "rejectedRecords"],
+      "properties": {
+        "runId": { "type": "string", "format": "uuid" },
+        "source": { "$ref": "#/$defs/SourceSystem" },
+        "status": { "enum": ["RUNNING", "SUCCEEDED", "FAILED"] },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": ["string", "null"], "format": "date-time" },
+        "pagesFetched": { "type": "integer", "minimum": 0 },
+        "rawRecords": { "type": "integer", "minimum": 0 },
+        "normalizedRecords": { "type": "integer", "minimum": 0 },
+        "rejectedRecords": { "type": "integer", "minimum": 0 },
+        "errorMessage": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

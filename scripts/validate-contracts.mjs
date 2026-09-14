@@ -34,6 +34,8 @@ for (const file of await readdir(path.join(contractRoot, "openapi"))) {
       if (!document.paths[path]?.post) throw new Error(`${file} is missing POST ${path}`);
     }
     if (!document.paths["/api/v1/ontology"]?.get) throw new Error(`${file} is missing GET /api/v1/ontology`);
+    if (!document.paths["/api/v1/admin/ingestions/{source}"]?.post) throw new Error(`${file} is missing ingestion start contract`);
+    if (!document.paths["/api/v1/admin/ingestions/{id}"]?.get) throw new Error(`${file} is missing ingestion status contract`);
     if (!document.paths["/api/v1/ontology/actions/validate"]?.post) {
       throw new Error(`${file} is missing POST /api/v1/ontology/actions/validate`);
     }
@@ -72,6 +74,11 @@ for (const definition of [
   "WorldGraph",
 ]) {
   if (!ontologySchema.$defs?.[definition]) throw new Error(`ontology-contract-v1.json is missing ${definition}`);
+}
+
+const ingestionSchema = JSON.parse(await readFile(path.join(contractRoot, "schemas", "ingestion-contract-v1.json"), "utf8"));
+for (const definition of ["SourceSystem", "StartIngestion", "IngestionResult"]) {
+  if (!ingestionSchema.$defs?.[definition]) throw new Error(`ingestion-contract-v1.json is missing ${definition}`);
 }
 
 console.log("Contract documents are valid.");
