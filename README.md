@@ -46,8 +46,9 @@ then start a source run through `POST /api/v1/admin/ingestions/{source}`. For ex
 
 Run status is available from `GET /api/v1/admin/ingestions/{id}`. Exact raw payloads, canonical rows, rejected rows, and
 credential-redacted provenance are stored separately. Live network tests are opt-in with
-`RUN_LIVE_INGESTION_TESTS=true`; fixture tests always run in CI. Day 14 entity resolution and Neo4j loading are not part
-of this implementation. See [docs/DATA_CATALOG.md](docs/DATA_CATALOG.md).
+`RUN_LIVE_INGESTION_TESTS=true`; fixture tests always run in CI. Day 14 adds conservative exact-identifier resolution,
+audited PostgreSQL-to-Neo4j projection, and bounded three-hop traversal. See
+[docs/days/DAY-14.md](docs/days/DAY-14.md).
 
 ## Start from a clean clone
 
@@ -61,6 +62,7 @@ docker compose down
 PostgreSQL starts with the default stack. Start the remaining optional local platform dependencies with:
 
 ```powershell
+$env:NEO4J_ENABLED="true"
 docker compose --profile platform up -d
 ```
 

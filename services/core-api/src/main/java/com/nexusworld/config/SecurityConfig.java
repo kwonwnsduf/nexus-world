@@ -21,7 +21,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableConfigurationProperties({AuthProperties.class, IngestionProperties.class})
+@EnableConfigurationProperties({AuthProperties.class, IngestionProperties.class, GraphProperties.class})
 @EnableScheduling
 @EnableMethodSecurity
 public class SecurityConfig {

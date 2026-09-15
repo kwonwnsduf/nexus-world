@@ -445,6 +445,59 @@ class AuthSecurityIntegrationTest {
 
     mockMvc
         .perform(
+            post("/api/v1/world-versions/" + versionId + "/graph/entities/resolve")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "entityType": "COMPANY",
+                      "naturalKey": "kr:company:005930",
+                      "displayName": "Semiconductor Company",
+                      "attributes": {"jurisdiction": "KR", "industryCode": "C26"},
+                      "identifiers": [{"scheme": "DART_CORP_CODE", "value": "00126380"}],
+                      "sourceSystem": "OPENDART"
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decision").value("MATCHED"))
+        .andExpect(jsonPath("$.entity.id").value(companyId));
+    mockMvc
+        .perform(
+            post("/api/v1/world-versions/" + versionId + "/graph/entities/resolve")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "entityType": "COMPANY",
+                      "naturalKey": "source:alternate-company-key",
+                      "displayName": "SAMSUNG ELECTRONICS",
+                      "attributes": {"jurisdiction": "KR", "industryCode": "C26"},
+                      "identifiers": [{"scheme": "dart-corp-code", "value": " 00126380 "}]
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decision").value("MATCHED"))
+        .andExpect(jsonPath("$.entity.id").value(companyId));
+    mockMvc
+        .perform(
+            post("/api/v1/world-versions/" + versionId + "/graph/entities/resolve")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "entityType": "COMPANY",
+                      "naturalKey": "unsafe-fuzzy",
+                      "displayName": "Similar Company",
+                      "identifiers": [{"scheme": "NAME", "value": "Semiconductor Company"}]
+                    }
+                    """))
+        .andExpect(status().isBadRequest());
+
+    mockMvc
+        .perform(
             post("/api/v1/world-versions/" + versionId + "/graph/relationships")
                 .header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)

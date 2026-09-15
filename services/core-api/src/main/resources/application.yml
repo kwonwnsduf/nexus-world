@@ -1,6 +1,8 @@
 spring:
   application:
     name: nexus-world-core-api
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/nexusworld}
     username: ${DATABASE_USER:nexusworld}
@@ -58,6 +60,13 @@ nexus:
       ilostat: ${ILOSTAT_BASE_URL:https://rplumber.ilo.org/data/indicator}
       kosis: ${KOSIS_BASE_URL:https://kosis.kr/openapi}
       oecd: ${OECD_SDMX_BASE_URL:https://sdmx.oecd.org/public/rest}
+  graph:
+    enabled: ${NEO4J_ENABLED:false}
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    username: ${NEO4J_USERNAME:neo4j}
+    password: ${NEO4J_PASSWORD:}
+    database: ${NEO4J_DATABASE:neo4j}
+    query-limit: ${NEO4J_QUERY_LIMIT:100}
 
 management:
   endpoints:

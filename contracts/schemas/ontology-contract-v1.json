@@ -95,20 +95,22 @@
       }
     },
     "GraphEntity": {
-      "allOf": [
-        { "$ref": "#/$defs/CreateGraphEntity" },
-        {
-          "type": "object",
-          "required": ["contractVersion", "id", "worldVersionId", "createdBy", "createdAt"],
-          "properties": {
-            "contractVersion": { "const": "v1" },
-            "id": { "type": "string", "format": "uuid" },
-            "worldVersionId": { "type": "string", "format": "uuid" },
-            "createdBy": { "type": "string", "format": "uuid" },
-            "createdAt": { "type": "string", "format": "date-time" }
-          }
-        }
-      ]
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractVersion", "id", "worldVersionId", "entityType", "naturalKey", "displayName", "attributes", "validFrom", "validTo", "createdBy", "createdAt"],
+      "properties": {
+        "contractVersion": { "const": "v1" },
+        "id": { "type": "string", "format": "uuid" },
+        "worldVersionId": { "type": "string", "format": "uuid" },
+        "entityType": { "type": "string" },
+        "naturalKey": { "type": "string" },
+        "displayName": { "type": "string" },
+        "attributes": { "type": "object" },
+        "validFrom": { "type": ["string", "null"], "format": "date-time" },
+        "validTo": { "type": ["string", "null"], "format": "date-time" },
+        "createdBy": { "type": "string", "format": "uuid" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
     },
     "CreateGraphRelationship": {
       "type": "object",
@@ -124,22 +126,106 @@
       }
     },
     "GraphRelationship": {
-      "allOf": [
-        { "$ref": "#/$defs/CreateGraphRelationship" },
-        {
-          "type": "object",
-          "required": ["contractVersion", "id", "worldVersionId", "sourceEntityType", "targetEntityType", "createdBy", "createdAt"],
-          "properties": {
-            "contractVersion": { "const": "v1" },
-            "id": { "type": "string", "format": "uuid" },
-            "worldVersionId": { "type": "string", "format": "uuid" },
-            "sourceEntityType": { "type": "string" },
-            "targetEntityType": { "type": "string" },
-            "createdBy": { "type": "string", "format": "uuid" },
-            "createdAt": { "type": "string", "format": "date-time" }
-          }
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractVersion", "id", "worldVersionId", "relationshipType", "sourceEntityId", "sourceEntityType", "targetEntityId", "targetEntityType", "attributes", "validFrom", "validTo", "createdBy", "createdAt"],
+      "properties": {
+        "contractVersion": { "const": "v1" },
+        "id": { "type": "string", "format": "uuid" },
+        "worldVersionId": { "type": "string", "format": "uuid" },
+        "relationshipType": { "type": "string" },
+        "sourceEntityId": { "type": "string", "format": "uuid" },
+        "sourceEntityType": { "type": "string" },
+        "targetEntityId": { "type": "string", "format": "uuid" },
+        "targetEntityType": { "type": "string" },
+        "attributes": { "type": "object" },
+        "validFrom": { "type": ["string", "null"], "format": "date-time" },
+        "validTo": { "type": ["string", "null"], "format": "date-time" },
+        "createdBy": { "type": "string", "format": "uuid" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "ResolutionIdentifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme", "value"],
+      "properties": {
+        "scheme": { "type": "string", "minLength": 2, "maxLength": 48 },
+        "value": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    },
+    "ResolveGraphEntity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entityType", "naturalKey", "displayName"],
+      "properties": {
+        "entityType": { "type": "string", "minLength": 1, "maxLength": 48 },
+        "naturalKey": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "attributes": { "type": "object" },
+        "identifiers": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/ResolutionIdentifier" } },
+        "sourceSystem": { "type": ["string", "null"], "maxLength": 32 },
+        "validFrom": { "type": ["string", "null"], "format": "date-time" },
+        "validTo": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "EntityResolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractVersion", "decision", "entity", "matchedSchemes"],
+      "properties": {
+        "contractVersion": { "const": "v1" },
+        "decision": { "enum": ["CREATED", "MATCHED"] },
+        "entity": { "$ref": "#/$defs/GraphEntity" },
+        "matchedSchemes": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+      }
+    },
+    "GraphProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractVersion", "projectionId", "worldVersionId", "status", "entityCount", "relationshipCount", "startedAt", "completedAt", "error"],
+      "properties": {
+        "contractVersion": { "const": "v1" },
+        "projectionId": { "type": "string", "format": "uuid" },
+        "worldVersionId": { "type": "string", "format": "uuid" },
+        "status": { "enum": ["RUNNING", "SUCCEEDED", "FAILED"] },
+        "entityCount": { "type": "integer", "minimum": 0 },
+        "relationshipCount": { "type": "integer", "minimum": 0 },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": ["string", "null"], "format": "date-time" },
+        "error": { "type": ["string", "null"] }
+      }
+    },
+    "ProjectedNode": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "entityType", "naturalKey", "displayName", "attributes"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" }, "entityType": { "type": "string" },
+        "naturalKey": { "type": "string" }, "displayName": { "type": "string" }, "attributes": { "type": "object" }
+      }
+    },
+    "ProjectedRelationship": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "relationshipType", "sourceEntityId", "targetEntityId", "attributes"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" }, "relationshipType": { "type": "string" },
+        "sourceEntityId": { "type": "string", "format": "uuid" },
+        "targetEntityId": { "type": "string", "format": "uuid" }, "attributes": { "type": "object" }
+      }
+    },
+    "GraphPaths": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contractVersion", "worldVersionId", "rootEntityId", "maxDepth", "paths"],
+      "properties": {
+        "contractVersion": { "const": "v1" }, "worldVersionId": { "type": "string", "format": "uuid" },
+        "rootEntityId": { "type": "string", "format": "uuid" }, "maxDepth": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "paths": { "type": "array", "items": { "type": "object", "additionalProperties": false,
+          "required": ["nodes", "relationships"], "properties": {
+            "nodes": { "type": "array", "items": { "$ref": "#/$defs/ProjectedNode" } },
+            "relationships": { "type": "array", "items": { "$ref": "#/$defs/ProjectedRelationship" } }
+          } }
         }
-      ]
+      }
     },
     "Ontology": {
       "type": "object",

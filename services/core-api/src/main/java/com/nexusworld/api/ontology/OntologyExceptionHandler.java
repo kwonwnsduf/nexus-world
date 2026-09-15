@@ -1,6 +1,7 @@
 package com.nexusworld.api.ontology;
 
 import com.nexusworld.application.ontology.*;
+import com.nexusworld.application.graph.GraphStoreUnavailableException;
 import jakarta.validation.ConstraintViolationException;
 import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -21,6 +22,11 @@ public class OntologyExceptionHandler {
                 HttpStatus.CONFLICT,
                 "Conflict",
                 "The graph resource conflicts with the ontology or existing world state");
+    }
+
+    @ExceptionHandler(GraphStoreUnavailableException.class)
+    ResponseEntity<Map<String, Object>> graphUnavailable(Exception exception) {
+        return problem(HttpStatus.SERVICE_UNAVAILABLE, "Graph Store Unavailable", exception.getMessage());
     }
 
     @ExceptionHandler({

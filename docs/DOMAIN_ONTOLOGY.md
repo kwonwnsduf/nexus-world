@@ -84,5 +84,10 @@ POST /api/v1/world-versions/{versionId}/graph/relationships
 GET  /api/v1/world-versions/{versionId}/graph
 ```
 
-Writes require `ANALYST`, `OPERATOR`, or `ADMIN`. `economic-civilization-v1` is additive and stable. Day 14 may project
-this source of truth into Neo4j, but Neo4j must not own transactional world state.
+Writes require `ANALYST`, `OPERATOR`, or `ADMIN`. `economic-civilization-v1` is additive and stable. PostgreSQL owns
+transactional world state. Neo4j receives atomically replaced, world-version-scoped read projections and serves bounded
+one-to-three-hop traversal only; it is never written back into transactional state.
+
+Entity resolution is deliberately conservative. Only exact, namespaced identifiers such as LEI, CIK, DART corporate
+code, ISO/UN location codes and versioned classification codes may auto-match. Display-name or fuzzy-name matching is
+not accepted. If exact identifiers disagree, the candidate is rejected for review instead of being merged.

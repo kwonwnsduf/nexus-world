@@ -1,6 +1,6 @@
 {
   "openapi": "3.1.0",
-  "info": { "title": "NEXUS WORLD Core API", "version": "1.5.0" },
+  "info": { "title": "NEXUS WORLD Core API", "version": "1.6.0" },
   "components": {
     "securitySchemes": {
       "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
@@ -244,6 +244,29 @@
     },
     "/api/v1/world-versions/{versionId}/graph": {
       "get": { "operationId": "getWorldGraph", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "versionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "responses": { "200": { "description": "Aggregate-safe economic civilization graph", "content": { "application/json": { "schema": { "$ref": "../schemas/ontology-contract-v1.json#/$defs/WorldGraph" } } } }, "404": { "description": "World version not found" } } }
+    },
+    "/api/v1/world-versions/{versionId}/graph/entities/resolve": {
+      "post": { "operationId": "resolveWorldGraphEntity", "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "versionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/ontology-contract-v1.json#/$defs/ResolveGraphEntity" } } } },
+        "responses": { "200": { "description": "Entity conservatively resolved by exact identifier", "content": { "application/json": { "schema": { "$ref": "../schemas/ontology-contract-v1.json#/$defs/EntityResolution" } } } }, "400": { "description": "Untrusted or malformed identifier" }, "409": { "description": "Identifiers disagree; merge refused" } }
+      }
+    },
+    "/api/v1/world-versions/{versionId}/graph/projections": {
+      "post": { "operationId": "projectWorldGraphToNeo4j", "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "versionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "PostgreSQL source-of-truth snapshot projected atomically", "content": { "application/json": { "schema": { "$ref": "../schemas/ontology-contract-v1.json#/$defs/GraphProjection" } } } }, "502": { "description": "Projection failed and was audited" } }
+      }
+    },
+    "/api/v1/world-versions/{versionId}/graph/paths/{rootEntityId}": {
+      "get": { "operationId": "getWorldGraphPaths", "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "versionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "rootEntityId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "maxDepth", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 3, "default": 3 } }
+        ],
+        "responses": { "200": { "description": "Bounded one-to-three-hop industrial and society paths", "content": { "application/json": { "schema": { "$ref": "../schemas/ontology-contract-v1.json#/$defs/GraphPaths" } } } }, "404": { "description": "Root entity not found" }, "503": { "description": "Neo4j is disabled or unavailable" } }
+      }
     }
   }
 }

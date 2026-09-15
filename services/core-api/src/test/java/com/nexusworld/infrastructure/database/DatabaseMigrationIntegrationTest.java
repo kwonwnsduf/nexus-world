@@ -39,7 +39,7 @@ class DatabaseMigrationIntegrationTest {
     MigrateResult firstRun = flyway.migrate();
     MigrateResult secondRun = flyway.migrate();
 
-    assertThat(firstRun.migrationsExecuted).isEqualTo(7);
+    assertThat(firstRun.migrationsExecuted).isEqualTo(8);
     assertThat(secondRun.migrationsExecuted).isZero();
     assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 

@@ -40,6 +40,9 @@ for (const file of await readdir(path.join(contractRoot, "openapi"))) {
       throw new Error(`${file} is missing POST /api/v1/ontology/actions/validate`);
     }
     if (!document.paths["/api/v1/world-versions/{versionId}/graph"]?.get) throw new Error(`${file} is missing world graph read contract`);
+    if (!document.paths["/api/v1/world-versions/{versionId}/graph/entities/resolve"]?.post) throw new Error(`${file} is missing entity resolution contract`);
+    if (!document.paths["/api/v1/world-versions/{versionId}/graph/projections"]?.post) throw new Error(`${file} is missing Neo4j projection contract`);
+    if (!document.paths["/api/v1/world-versions/{versionId}/graph/paths/{rootEntityId}"]?.get) throw new Error(`${file} is missing bounded graph path contract`);
   }
 }
 
@@ -72,6 +75,11 @@ for (const definition of [
   "GraphRelationship",
   "Ontology",
   "WorldGraph",
+  "ResolutionIdentifier",
+  "ResolveGraphEntity",
+  "EntityResolution",
+  "GraphProjection",
+  "GraphPaths",
 ]) {
   if (!ontologySchema.$defs?.[definition]) throw new Error(`ontology-contract-v1.json is missing ${definition}`);
 }

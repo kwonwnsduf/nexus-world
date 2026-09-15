@@ -1,11 +1,14 @@
 package com.nexusworld.api.ontology;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexusworld.application.graph.*;
 import com.nexusworld.application.ontology.OntologyService;
 import com.nexusworld.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -14,9 +17,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1")
 public class OntologyController {
     private final OntologyService service;
+    private final EntityResolutionService resolution;
+    private final GraphProjectionService projection;
+    private final ObjectMapper json;
 
-    public OntologyController(OntologyService service) {
+    public OntologyController(OntologyService service, EntityResolutionService resolution,
+            GraphProjectionService projection, ObjectMapper json) {
         this.service = service;
+        this.resolution = resolution;
+        this.projection = projection;
+        this.json = json;
     }
 
     @GetMapping("/ontology")
@@ -77,5 +87,35 @@ public class OntologyController {
                 service.graphRelationships(versionId).stream()
                         .map(GraphRelationshipResponse::from)
                         .toList());
+    }
+
+    @PostMapping("/world-versions/{versionId}/graph/entities/resolve")
+    @PreAuthorize("hasAnyRole('ANALYST','OPERATOR','ADMIN')")
+    public EntityResolutionResponse resolveEntity(@PathVariable UUID versionId,
+            @Valid @RequestBody ResolveGraphEntityRequest request,
+            @AuthenticationPrincipal CustomUserDetails user) {
+        var identifiers = request.identifiers() == null ? java.util.List.<EntityResolutionService.Identifier>of()
+                : request.identifiers().stream().map(value ->
+                    new EntityResolutionService.Identifier(value.scheme(), value.value())).toList();
+        return EntityResolutionResponse.from(resolution.resolve(versionId, request.entityType(),
+                request.naturalKey(), request.displayName(), request.attributes(), identifiers,
+                request.sourceSystem(), request.validFrom(), request.validTo(), user.getUserId()));
+    }
+
+    @PostMapping("/world-versions/{versionId}/graph/projections")
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")
+    public ResponseEntity<GraphProjectionResponse> project(@PathVariable UUID versionId,
+            @AuthenticationPrincipal CustomUserDetails user) {
+        var result = projection.project(versionId, user.getUserId());
+        var status = result.getStatus() == com.nexusworld.domain.graph.GraphProjectionRun.Status.SUCCEEDED
+                ? HttpStatus.OK : HttpStatus.BAD_GATEWAY;
+        return ResponseEntity.status(status).body(GraphProjectionResponse.from(result));
+    }
+
+    @GetMapping("/world-versions/{versionId}/graph/paths/{rootEntityId}")
+    public GraphPathsResponse paths(@PathVariable UUID versionId, @PathVariable UUID rootEntityId,
+            @RequestParam(defaultValue = "3") int maxDepth) {
+        return GraphPathsResponse.from(versionId, rootEntityId, maxDepth,
+                projection.paths(versionId, rootEntityId, maxDepth), json);
     }
 }
