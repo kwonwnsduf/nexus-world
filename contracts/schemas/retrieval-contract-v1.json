@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-world.local/contracts/retrieval-contract-v1.json",
+  "title": "Retrieval contract v1",
+  "$defs": {
+    "Chunk": {
+      "type": "object",
+      "required": ["chunkId", "documentId", "title", "sourceUri", "dataSourceId", "evidenceId", "sectionPath", "content", "ordinal", "startCharacter", "endCharacter"],
+      "properties": {
+        "chunkId": { "type": "string", "minLength": 1 },
+        "documentId": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "sourceUri": { "type": ["string", "null"] },
+        "dataSourceId": { "type": ["string", "null"], "format": "uuid" },
+        "evidenceId": { "type": ["string", "null"], "format": "uuid" },
+        "sectionPath": { "type": "array", "items": { "type": "string" } },
+        "content": { "type": "string", "minLength": 1 },
+        "ordinal": { "type": "integer", "minimum": 0 },
+        "startCharacter": { "type": "integer", "minimum": 0 },
+        "endCharacter": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "SearchHit": {
+      "type": "object",
+      "required": ["chunk", "score", "keywordRank", "vectorRank"],
+      "properties": {
+        "chunk": { "$ref": "#/$defs/Chunk" },
+        "score": { "type": "number" },
+        "keywordRank": { "type": ["integer", "null"], "minimum": 1 },
+        "vectorRank": { "type": ["integer", "null"], "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "Citation": {
+      "type": "object",
+      "required": ["index", "chunkId", "documentId", "title", "sourceUri", "dataSourceId", "evidenceId", "sectionPath", "startCharacter", "endCharacter"],
+      "properties": {
+        "index": { "type": "integer", "minimum": 1 },
+        "chunkId": { "type": "string" },
+        "documentId": { "type": "string" },
+        "title": { "type": "string" },
+        "sourceUri": { "type": ["string", "null"] },
+        "dataSourceId": { "type": ["string", "null"], "format": "uuid" },
+        "evidenceId": { "type": ["string", "null"], "format": "uuid" },
+        "sectionPath": { "type": "array", "items": { "type": "string" } },
+        "startCharacter": { "type": "integer", "minimum": 0 },
+        "endCharacter": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

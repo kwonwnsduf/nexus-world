@@ -27,6 +27,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -38,7 +39,9 @@ class AuthSecurityIntegrationTest {
 
   @Container
   private static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>("postgres:16-alpine")
+      new PostgreSQLContainer<>(
+              DockerImageName.parse("pgvector/pgvector:pg16")
+                  .asCompatibleSubstituteFor("postgres"))
           .withDatabaseName("nexusworld_auth")
           .withUsername("nexusworld")
           .withPassword("integration-only");

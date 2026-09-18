@@ -65,6 +65,11 @@ services:
   ai-service:
     build:
       context: services/ai-service
+    environment:
+      RAG_DATABASE_URL: postgresql://${POSTGRES_USER:-nexusworld}:${POSTGRES_PASSWORD:-nexusworld-local-only}@postgres:5432/${POSTGRES_DB:-nexusworld}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      OPENAI_EMBEDDING_TIMEOUT_SECONDS: ${OPENAI_EMBEDDING_TIMEOUT_SECONDS:-30}
     ports:
       - "${AI_SERVICE_PORT:-8000}:8000"
     healthcheck:
@@ -80,6 +85,9 @@ services:
       retries: 12
       start_period: 5s
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   postgres:
     image: pgvector/pgvector:pg16

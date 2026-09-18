@@ -1,0 +1,34 @@
+{
+  "measuredAt": "2026-09-17",
+  "dataset": "app/evals/datasets/retrieval-v1.json",
+  "queryCount": 6,
+  "k": 5,
+  "repeats": 3,
+  "current": {
+    "ftsAnalyzer": "kiwi-v1",
+    "embeddingProvider": "openai:text-embedding-3-small:1536",
+    "strategies": {
+      "ftsOnly": { "recall@5": 1.0, "mrr": 0.888889, "latencyP50Ms": 11.225, "latencyP95Ms": 12.430 },
+      "vectorOnly": { "recall@5": 1.0, "mrr": 1.0, "latencyP50Ms": 199.756, "latencyP95Ms": 240.090 },
+      "hybridRrf": { "recall@5": 1.0, "mrr": 0.916667, "latencyP50Ms": 217.165, "latencyP95Ms": 284.546 },
+      "hybridReranked": { "recall@5": 1.0, "mrr": 0.916667, "latencyP50Ms": 216.419, "latencyP95Ms": 342.968 }
+    }
+  },
+  "legacyBaseline": {
+    "ftsAnalyzer": "simple-v1",
+    "embeddingProvider": "feature-hashing:384",
+    "latencyScope": "in-process; do not compare directly with HTTP latency",
+    "strategies": {
+      "ftsOnly": { "recall@5": 0.833333, "mrr": 0.833333 },
+      "vectorOnly": { "recall@5": 1.0, "mrr": 0.791667 },
+      "hybridRrf": { "recall@5": 1.0, "mrr": 0.791667 },
+      "hybridReranked": { "recall@5": 1.0, "mrr": 0.791667 }
+    }
+  },
+  "qualityDeltaCurrentMinusLegacy": {
+    "ftsOnly": { "recall@5": 0.166667, "mrr": 0.055556 },
+    "vectorOnly": { "recall@5": 0.0, "mrr": 0.208333 },
+    "hybridRrf": { "recall@5": 0.0, "mrr": 0.125 },
+    "hybridReranked": { "recall@5": 0.0, "mrr": 0.125 }
+  }
+}

@@ -1,4 +1,6 @@
 fastapi==0.116.1
+httpx==0.28.1
+kiwipiepy==0.23.2
 pydantic==2.11.7
+psycopg[binary]==3.2.10
 uvicorn[standard]==0.35.0
-

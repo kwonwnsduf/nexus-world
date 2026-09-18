@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -23,7 +24,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class DatabaseMigrationIntegrationTest {
   @Container
   private static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>("postgres:16-alpine")
+      new PostgreSQLContainer<>(
+              DockerImageName.parse("pgvector/pgvector:pg16")
+                  .asCompatibleSubstituteFor("postgres"))
           .withDatabaseName("nexusworld")
           .withUsername("nexusworld")
           .withPassword("integration-only");
@@ -39,7 +42,7 @@ class DatabaseMigrationIntegrationTest {
     MigrateResult firstRun = flyway.migrate();
     MigrateResult secondRun = flyway.migrate();
 
-    assertThat(firstRun.migrationsExecuted).isEqualTo(8);
+    assertThat(firstRun.migrationsExecuted).isEqualTo(12);
     assertThat(secondRun.migrationsExecuted).isZero();
     assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 
@@ -276,6 +279,31 @@ class DatabaseMigrationIntegrationTest {
                           + "(code,actor_type,target_type,description) "
                           + "VALUES ('INVALID_ACTOR','UNKNOWN','FACILITY','Invalid')"))
           .hasMessageContaining("ontology_action_types_actor_type_fkey");
+    }
+  }
+
+  @Test
+  @Order(5)
+  void retrievalMigrationInstallsVectorAndBothSearchIndexes() throws Exception {
+    Flyway.configure()
+        .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+        .load()
+        .migrate();
+
+    try (Connection connection = POSTGRES.createConnection("");
+        PreparedStatement query =
+            connection.prepareStatement(
+                "SELECT (SELECT count(*) FROM pg_extension WHERE extname = 'vector'),"
+                    + " (SELECT count(*) FROM pg_indexes WHERE tablename = 'rag_chunks'"
+                    + " AND indexname IN ('rag_chunks_search_idx', 'rag_chunks_embedding_idx')) ,"
+                    + " (SELECT format_type(atttypid, atttypmod) FROM pg_attribute"
+                    + " WHERE attrelid = 'rag_chunks'::regclass AND attname = 'embedding')")) {
+      try (ResultSet result = query.executeQuery()) {
+        assertThat(result.next()).isTrue();
+        assertThat(result.getInt(1)).isOne();
+        assertThat(result.getInt(2)).isEqualTo(2);
+        assertThat(result.getString(3)).isEqualTo("vector(1536)");
+      }
     }
   }
 

@@ -21,3 +21,13 @@ Day 6 adds append-oriented `/api/v1/sources`, `/api/v1/evidence`, `/api/v1/assum
 `/api/v1/provenance-links` contracts. Writes require analyst-or-higher authority; authenticated viewers may resolve a
 provenance chain. Each link addresses a domain property with a JSON Pointer and has exactly one evidence or assumption
 origin. Payload definitions are versioned in `contracts/schemas/provenance-contract-v1.json`.
+
+## Retrieval v1
+
+Day 15-17 adds AI-service-owned `/api/v1/retrieval/documents`, `/search`, and `/answer` contracts. Documents are
+split on Markdown section boundaries and retain character locators. Search explicitly selects `keyword`, `vector`, or
+`hybrid`; hybrid uses reciprocal-rank fusion followed by a deterministic lexical/section reranker. Answers are
+extractive and every statement marker resolves to returned chunk metadata. The service does not fabricate an answer
+when indexed evidence is absent. Ingestion accepts optional `evidenceId` and `dataSourceId`; chunk and citation payloads
+return both nullable IDs and continue returning `sourceUri`. Search accepts additive `rerank` (default `true`) and
+reports whether reranking was applied. Payload definitions live in `contracts/schemas/retrieval-contract-v1.json`.

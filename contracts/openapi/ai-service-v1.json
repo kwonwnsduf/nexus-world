@@ -2,6 +2,24 @@
   "openapi": "3.1.0",
   "info": { "title": "NEXUS WORLD AI Service", "version": "1.0.0" },
   "paths": {
+    "/api/v1/retrieval/documents": {
+      "post": {
+        "operationId": "ingestRetrievalDocument",
+        "responses": { "201": { "description": "Section-aware chunks created" } }
+      }
+    },
+    "/api/v1/retrieval/search": {
+      "post": {
+        "operationId": "searchEvidence",
+        "responses": { "200": { "description": "Ranked keyword, vector, or hybrid evidence" } }
+      }
+    },
+    "/api/v1/retrieval/answer": {
+      "post": {
+        "operationId": "answerFromEvidence",
+        "responses": { "200": { "description": "Extractive answer with resolvable citations" } }
+      }
+    },
     "/api/v1/platform/capabilities": {
       "get": {
         "operationId": "getAiCapabilities",
@@ -19,4 +37,3 @@
     }
   }
 }
-
