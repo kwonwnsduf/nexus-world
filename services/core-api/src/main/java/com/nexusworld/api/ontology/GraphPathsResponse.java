@@ -5,7 +5,7 @@ import com.nexusworld.application.port.GraphProjectionStore;
 import java.util.*;
 public record GraphPathsResponse(String contractVersion, UUID worldVersionId, UUID rootEntityId,
     int maxDepth, List<Path> paths) {
-  static GraphPathsResponse from(UUID world, UUID root, int depth,
+  public static GraphPathsResponse from(UUID world, UUID root, int depth,
       List<GraphProjectionStore.GraphPath> values, ObjectMapper json) {
     return new GraphPathsResponse("v1", world, root, depth, values.stream().map(path ->
         new Path(path.nodes().stream().map(n -> new Node(n.id(), n.entityType(), n.naturalKey(),

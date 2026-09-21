@@ -43,6 +43,10 @@ for (const file of await readdir(path.join(contractRoot, "openapi"))) {
     if (!document.paths["/api/v1/world-versions/{versionId}/graph/entities/resolve"]?.post) throw new Error(`${file} is missing entity resolution contract`);
     if (!document.paths["/api/v1/world-versions/{versionId}/graph/projections"]?.post) throw new Error(`${file} is missing Neo4j projection contract`);
     if (!document.paths["/api/v1/world-versions/{versionId}/graph/paths/{rootEntityId}"]?.get) throw new Error(`${file} is missing bounded graph path contract`);
+    if (!document.paths["/api/v1/world-versions/{versionId}/graph/entities/matches"]?.get) throw new Error(`${file} is missing graph alias match contract`);
+  }
+  if (file === "ai-service-v1.json") {
+    if (!document.paths["/api/v1/graphrag/query"]?.post) throw new Error(`${file} is missing GraphRAG query contract`);
   }
 }
 
@@ -80,8 +84,14 @@ for (const definition of [
   "EntityResolution",
   "GraphProjection",
   "GraphPaths",
+  "GraphNodeMatches",
 ]) {
   if (!ontologySchema.$defs?.[definition]) throw new Error(`ontology-contract-v1.json is missing ${definition}`);
+}
+
+const graphRagSchema = JSON.parse(await readFile(path.join(contractRoot, "schemas", "graphrag-contract-v1.json"), "utf8"));
+for (const definition of ["GraphRagQuery", "GraphEvidence", "RankedPath", "GraphRagResult"]) {
+  if (!graphRagSchema.$defs?.[definition]) throw new Error(`graphrag-contract-v1.json is missing ${definition}`);
 }
 
 const ingestionSchema = JSON.parse(await readFile(path.join(contractRoot, "schemas", "ingestion-contract-v1.json"), "utf8"));

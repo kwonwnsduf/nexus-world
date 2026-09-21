@@ -50,6 +50,11 @@ credential-redacted provenance are stored separately. Live network tests are opt
 audited PostgreSQL-to-Neo4j projection, and bounded three-hop traversal. See
 [docs/days/DAY-14.md](docs/days/DAY-14.md).
 
+Days 15-18 add section-aware chunking, PostgreSQL FTS/pgvector hybrid retrieval with RRF and deterministic reranking,
+and evidence-grounded GraphRAG. With Neo4j enabled and a world projection loaded, authenticated callers can use
+`POST /api/v1/graphrag/query` to retrieve indexed PostgreSQL alias/FTS candidates, rank bounded industrial-to-society paths, and receive graph
+provenance plus text citations. See [docs/days/DAY-18.md](docs/days/DAY-18.md).
+
 ## Start from a clean clone
 
 ```powershell

@@ -267,6 +267,16 @@
         ],
         "responses": { "200": { "description": "Bounded one-to-three-hop industrial and society paths", "content": { "application/json": { "schema": { "$ref": "../schemas/ontology-contract-v1.json#/$defs/GraphPaths" } } } }, "404": { "description": "Root entity not found" }, "503": { "description": "Neo4j is disabled or unavailable" } }
       }
+    },
+    "/api/v1/world-versions/{versionId}/graph/entities/matches": {
+      "get": { "operationId": "matchProjectedGraphEntitiesByAlias",
+        "parameters": [
+          { "name": "versionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "query", "in": "query", "required": true, "schema": { "type": "string", "minLength": 1, "maxLength": 500 } },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 20, "default": 5 } }
+        ],
+        "responses": { "200": { "description": "Ranked PostgreSQL exact-alias, trigram, and FTS entity candidates", "content": { "application/json": { "schema": { "$ref": "../schemas/ontology-contract-v1.json#/$defs/GraphNodeMatches" } } } }, "404": { "description": "World version not found" } }
+      }
     }
   }
 }

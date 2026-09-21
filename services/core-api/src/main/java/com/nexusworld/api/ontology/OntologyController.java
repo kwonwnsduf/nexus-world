@@ -118,4 +118,11 @@ public class OntologyController {
         return GraphPathsResponse.from(versionId, rootEntityId, maxDepth,
                 projection.paths(versionId, rootEntityId, maxDepth), json);
     }
+
+    @GetMapping("/world-versions/{versionId}/graph/entities/matches")
+    public GraphNodeMatchesResponse matchNodes(@PathVariable UUID versionId,
+            @RequestParam String query, @RequestParam(defaultValue = "5") int limit) {
+        return GraphNodeMatchesResponse.from(versionId, query,
+                projection.matchNodes(versionId, query, limit), json);
+    }
 }

@@ -20,6 +20,17 @@
         "responses": { "200": { "description": "Extractive answer with resolvable citations" } }
       }
     },
+    "/api/v1/graphrag/query": {
+      "post": {
+        "operationId": "queryEvidenceGroundedGraph",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/graphrag-contract-v1.json#/$defs/GraphRagQuery" } } } },
+        "responses": {
+          "200": { "description": "Ranked bounded industrial and society paths with graph and text evidence", "content": { "application/json": { "schema": { "$ref": "../schemas/graphrag-contract-v1.json#/$defs/GraphRagResult" } } } },
+          "503": { "description": "Graph projection is disabled or unavailable" }
+        }
+      }
+    },
     "/api/v1/platform/capabilities": {
       "get": {
         "operationId": "getAiCapabilities",
@@ -34,6 +45,11 @@
           }
         }
       }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
     }
   }
 }

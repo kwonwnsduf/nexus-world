@@ -1,6 +1,7 @@
 package com.nexusworld.application.graph;
 
 import com.nexusworld.application.port.GraphProjectionStore;
+import com.nexusworld.application.port.GraphEntitySearchStore;
 import com.nexusworld.domain.graph.*;
 import com.nexusworld.domain.ontology.*;
 import java.time.Clock;
@@ -13,12 +14,14 @@ public class GraphProjectionService {
   private final WorldGraphRelationshipRepository relationships;
   private final GraphProjectionRunRepository runs;
   private final GraphProjectionStore store;
+  private final GraphEntitySearchStore search;
   private final Clock clock;
 
   public GraphProjectionService(WorldGraphEntityRepository entities,
       WorldGraphRelationshipRepository relationships, GraphProjectionRunRepository runs,
-      GraphProjectionStore store, Clock clock) {
-    this.entities=entities; this.relationships=relationships; this.runs=runs; this.store=store; this.clock=clock;
+      GraphProjectionStore store, GraphEntitySearchStore search, Clock clock) {
+    this.entities=entities; this.relationships=relationships; this.runs=runs; this.store=store;
+    this.search=search; this.clock=clock;
   }
 
   public GraphProjectionRun project(UUID worldVersionId, UUID actor) {
@@ -46,5 +49,24 @@ public class GraphProjectionService {
       throw new com.nexusworld.application.ontology.OntologyNotFoundException("Graph entity not found in world version");
     }
     return store.paths(worldVersionId, root, maxDepth, 100);
+  }
+
+  public List<GraphProjectionStore.GraphNode> matchNodes(UUID worldVersionId, String query,
+      int limit) {
+    if (query == null || query.isBlank()) throw new IllegalArgumentException("query is required");
+    if (query.length() > 500) throw new IllegalArgumentException("query must be at most 500 characters");
+    if (limit < 1 || limit > 20) throw new IllegalArgumentException("limit must be between 1 and 20");
+    if (!entities.worldVersionExists(worldVersionId)) {
+      throw new com.nexusworld.application.ontology.OntologyNotFoundException("World version not found");
+    }
+    GraphSearchQuery searchQuery = GraphSearchQuery.from(query);
+    List<UUID> ids = search.search(worldVersionId, searchQuery.normalized(),
+        searchQuery.webSearch(), limit);
+    Map<UUID, WorldGraphEntity> found = new HashMap<>();
+    entities.findAllById(ids).forEach(entity -> found.put(entity.getId(), entity));
+    return ids.stream().map(found::get).filter(Objects::nonNull)
+        .map(entity -> new GraphProjectionStore.GraphNode(entity.getId(), entity.getEntityType(),
+            entity.getNaturalKey(), entity.getDisplayName(), entity.getAttributes().toString()))
+        .toList();
   }
 }

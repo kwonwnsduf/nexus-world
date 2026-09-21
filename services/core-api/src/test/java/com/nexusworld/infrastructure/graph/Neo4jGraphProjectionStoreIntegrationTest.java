@@ -21,7 +21,8 @@ class Neo4jGraphProjectionStoreIntegrationTest {
   @Test void replacesProjectionAndReturnsIndustrialToSocietyThreeHopPath() {
     UUID world=UUID.randomUUID(), actor=UUID.randomUUID();
     var json = new ObjectMapper();
-    var facility=node(world, actor, "FACILITY", "facility:fab", "Semiconductor fab", json);
+    var facility=node(world, actor, "FACILITY", "facility:fab", "Semiconductor fab", json,
+        List.of("TSMC Fab", "대만 팹"));
     var company=node(world, actor, "COMPANY", "company:chip", "Chip company", json);
     var cohort=node(world, actor, "DEMOGRAPHIC_COHORT", "cohort:workers", "Workers", json);
     var household=node(world, actor, "HOUSEHOLD_ARCHETYPE", "household:worker", "Worker households", json);
@@ -46,7 +47,14 @@ class Neo4jGraphProjectionStoreIntegrationTest {
   }
 
   private WorldGraphEntity node(UUID world, UUID actor, String type, String key, String name, ObjectMapper json) {
-    return new WorldGraphEntity(UUID.randomUUID(),world,type,key,name,json.createObjectNode().put("test",true),
+    return node(world, actor, type, key, name, json, List.of());
+  }
+  private WorldGraphEntity node(UUID world, UUID actor, String type, String key, String name,
+      ObjectMapper json, List<String> aliases) {
+    var attributes = json.createObjectNode().put("test", true);
+    var aliasArray = attributes.putArray("aliases");
+    aliases.forEach(aliasArray::add);
+    return new WorldGraphEntity(UUID.randomUUID(),world,type,key,name,attributes,
         null,null,actor,Instant.now());
   }
   private WorldGraphRelationship edge(UUID world, UUID actor, String type, WorldGraphEntity source,

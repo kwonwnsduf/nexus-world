@@ -227,6 +227,16 @@
         }
       }
     },
+    "GraphNodeMatches": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contractVersion", "worldVersionId", "query", "matches"],
+      "properties": {
+        "contractVersion": { "const": "v1" },
+        "worldVersionId": { "type": "string", "format": "uuid" },
+        "query": { "type": "string" },
+        "matches": { "type": "array", "items": { "$ref": "#/$defs/ProjectedNode" } }
+      }
+    },
     "Ontology": {
       "type": "object",
       "required": ["contractVersion", "ontologyVersion", "entityTypes", "propertyTypes", "relationshipTypes", "actionTypes"],

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.api.capabilities import router as capabilities_router
+from app.api.graphrag import router as graphrag_router
 from app.api.health import router as health_router
 from app.api.retrieval import router as retrieval_router
 
@@ -13,3 +14,4 @@ app = FastAPI(
 app.include_router(health_router)
 app.include_router(capabilities_router)
 app.include_router(retrieval_router)
+app.include_router(graphrag_router)

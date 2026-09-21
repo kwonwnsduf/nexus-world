@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-world.local/contracts/graphrag-contract-v1.json",
+  "title": "GraphRAG contract v1",
+  "$defs": {
+    "GraphRagQuery": {
+      "type": "object", "additionalProperties": false,
+      "required": ["worldVersionId", "query"],
+      "properties": {
+        "worldVersionId": { "type": "string", "format": "uuid" },
+        "query": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "maxDepth": { "type": "integer", "minimum": 1, "maximum": 3, "default": 3 },
+        "rootLimit": { "type": "integer", "minimum": 1, "maximum": 10, "default": 5 },
+        "pathLimit": { "type": "integer", "minimum": 1, "maximum": 20, "default": 10 },
+        "evidenceLimit": { "type": "integer", "minimum": 1, "maximum": 10, "default": 5 }
+      }
+    },
+    "GraphEvidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["evidenceId", "dataSourceId", "sourceUri", "ownerKind", "ownerId"],
+      "properties": {
+        "evidenceId": { "type": ["string", "null"], "format": "uuid" },
+        "dataSourceId": { "type": ["string", "null"], "format": "uuid" },
+        "sourceUri": { "type": ["string", "null"] },
+        "ownerKind": { "enum": ["NODE", "RELATIONSHIP"] },
+        "ownerId": { "type": "string", "format": "uuid" }
+      }
+    },
+    "RankedPath": {
+      "type": "object", "additionalProperties": false,
+      "required": ["score", "nodes", "relationships"],
+      "properties": {
+        "score": { "type": "number" },
+        "nodes": { "type": "array", "items": { "$ref": "ontology-contract-v1.json#/$defs/ProjectedNode" } },
+        "relationships": { "type": "array", "items": { "$ref": "ontology-contract-v1.json#/$defs/ProjectedRelationship" } }
+      }
+    },
+    "GraphRagResult": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contractVersion", "worldVersionId", "query", "answer", "roots", "paths", "graphEvidence", "textCitations"],
+      "properties": {
+        "contractVersion": { "const": "v1" },
+        "worldVersionId": { "type": "string", "format": "uuid" },
+        "query": { "type": "string" },
+        "answer": { "type": "string" },
+        "roots": { "type": "array", "items": { "$ref": "ontology-contract-v1.json#/$defs/ProjectedNode" } },
+        "paths": { "type": "array", "items": { "$ref": "#/$defs/RankedPath" } },
+        "graphEvidence": { "type": "array", "items": { "$ref": "#/$defs/GraphEvidence" } },
+        "textCitations": { "type": "array", "items": { "$ref": "retrieval-contract-v1.json#/$defs/Citation" } }
+      }
+    }
+  }
+}

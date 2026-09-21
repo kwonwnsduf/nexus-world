@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.nexusworld.domain.id.WorldId;
+import com.nexusworld.infrastructure.graph.PostgresGraphEntitySearchStore;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -18,6 +19,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 @Testcontainers(disabledWithoutDocker = true)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -42,7 +45,7 @@ class DatabaseMigrationIntegrationTest {
     MigrateResult firstRun = flyway.migrate();
     MigrateResult secondRun = flyway.migrate();
 
-    assertThat(firstRun.migrationsExecuted).isEqualTo(12);
+    assertThat(firstRun.migrationsExecuted).isEqualTo(13);
     assertThat(secondRun.migrationsExecuted).isZero();
     assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 
@@ -305,6 +308,63 @@ class DatabaseMigrationIntegrationTest {
         assertThat(result.getString(3)).isEqualTo("vector(1536)");
       }
     }
+  }
+
+  @Test
+  @Order(6)
+  void graphEntitySearchIndexSupportsAliasTrigramAndFtsCandidates() throws Exception {
+    Flyway.configure()
+        .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+        .load()
+        .migrate();
+
+    UUID actor = UUID.randomUUID(), world = UUID.randomUUID(), version = UUID.randomUUID();
+    UUID facility = UUID.randomUUID();
+    try (Connection connection = POSTGRES.createConnection("")) {
+      execute(connection,
+          "INSERT INTO users (id,username,normalized_username,password_hash) VALUES (?,?,?,?)",
+          actor, "search-" + actor, "search-" + actor, "unused");
+      execute(connection, "INSERT INTO worlds (id,name) VALUES (?,?)", world, "Search world");
+      execute(connection,
+          "INSERT INTO world_versions (id,world_id,version_number) VALUES (?,?,1)",
+          version, world);
+      execute(connection,
+          "INSERT INTO world_graph_entities "
+              + "(id,world_version_id,entity_type,natural_key,display_name,attributes,created_by) "
+              + "VALUES (?,?, 'FACILITY','facility:fab18','Semiconductor Fab 18',"
+              + "'{\"facilityKind\":\"FAB\",\"regionCode\":\"TW\","
+              + "\"aliases\":[\"TSMC Fab 18\",\"대만 팹\"],"
+              + "\"description\":\"advanced semiconductor wafer foundry\"}'::jsonb,?)",
+          facility, version, actor);
+
+      try (PreparedStatement alias = connection.prepareStatement(
+              "SELECT entity_id FROM graph_entity_aliases "
+                  + "WHERE world_version_id=? AND normalized_alias <% ?")) {
+        alias.setObject(1, version);
+        alias.setString(2, "대만 팹 공급망 영향");
+        try (ResultSet result = alias.executeQuery()) {
+          assertThat(result.next()).isTrue();
+          assertThat(result.getObject(1, UUID.class)).isEqualTo(facility);
+        }
+      }
+      try (PreparedStatement fts = connection.prepareStatement(
+              "SELECT entity_id FROM graph_entity_search_documents "
+                  + "WHERE world_version_id=? AND search_vector @@ "
+                  + "websearch_to_tsquery('simple', ?)")) {
+        fts.setObject(1, version);
+        fts.setString(2, "semiconductor OR wafer");
+        try (ResultSet result = fts.executeQuery()) {
+          assertThat(result.next()).isTrue();
+          assertThat(result.getObject(1, UUID.class)).isEqualTo(facility);
+        }
+      }
+    }
+
+    var dataSource = new DriverManagerDataSource(
+        POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+    var store = new PostgresGraphEntitySearchStore(new NamedParameterJdbcTemplate(dataSource));
+    assertThat(store.search(version, "대만 팹 공급망 영향", "대만 OR 팹 OR 공급망 OR 영향", 5))
+        .containsExactly(facility);
   }
 
   private void execute(Connection connection, String sql, Object... values) throws Exception {

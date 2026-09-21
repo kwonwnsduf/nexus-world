@@ -31,3 +31,7 @@ extractive and every statement marker resolves to returned chunk metadata. The s
 when indexed evidence is absent. Ingestion accepts optional `evidenceId` and `dataSourceId`; chunk and citation payloads
 return both nullable IDs and continue returning `sourceUri`. Search accepts additive `rerank` (default `true`) and
 reports whether reranking was applied. Payload definitions live in `contracts/schemas/retrieval-contract-v1.json`.
+
+GraphRAG uses `POST /api/v1/graphrag/query` with a world version and a bounded free-text query. Core API resolves indexed
+PostgreSQL exact-alias, trigram, and FTS candidates, then the AI service requests one-to-three-hop Neo4j paths and returns
+ranked paths, graph evidence, and Day 17 text citations under `contracts/schemas/graphrag-contract-v1.json`.
