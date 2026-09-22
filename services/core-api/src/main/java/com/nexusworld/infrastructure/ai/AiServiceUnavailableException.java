@@ -8,5 +8,8 @@ public class AiServiceUnavailableException extends RuntimeException {
     public AiServiceUnavailableException(Throwable cause) {
         super("AI service contract is unavailable", cause);
     }
-}
 
+    public AiServiceUnavailableException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}

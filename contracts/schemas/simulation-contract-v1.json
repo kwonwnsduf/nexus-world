@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-world.local/contracts/simulation-contract-v1.json",
+  "title": "NEXUS WORLD deterministic industrial simulation v1",
+  "$defs": {
+    "CompanyState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["companyId", "industry", "baselineProduction", "capacity", "inventory", "demand", "unitPrice", "unitVariableCost", "workforce", "wagePerWorker", "productivity"],
+      "properties": {
+        "companyId": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "industry": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "baselineProduction": { "type": "number", "minimum": 0 },
+        "capacity": { "type": "number", "minimum": 0 },
+        "inventory": { "type": "number", "minimum": 0 },
+        "demand": { "type": "number", "minimum": 0 },
+        "unitPrice": { "type": "number", "exclusiveMinimum": 0 },
+        "unitVariableCost": { "type": "number", "minimum": 0 },
+        "workforce": { "type": "number", "minimum": 0 },
+        "wagePerWorker": { "type": "number", "minimum": 0 },
+        "productivity": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "SupplyLink": {
+      "type": "object", "additionalProperties": false,
+      "required": ["supplierId", "customerId", "inputUnitsPerOutput", "maxFlow", "unitCost"],
+      "properties": {
+        "supplierId": { "type": "string" }, "customerId": { "type": "string" },
+        "inputUnitsPerOutput": { "type": "number", "exclusiveMinimum": 0 },
+        "maxFlow": { "type": "number", "minimum": 0 }, "unitCost": { "type": "number", "minimum": 0 }
+      }
+    },
+    "IndustrialShock": {
+      "type": "object", "additionalProperties": false,
+      "required": ["companyId", "turn"],
+      "properties": {
+        "companyId": { "type": "string" }, "turn": { "type": "integer", "minimum": 1, "maximum": 120 },
+        "supplyMultiplier": { "type": "number", "minimum": 0, "maximum": 2, "default": 1 },
+        "demandMultiplier": { "type": "number", "minimum": 0, "maximum": 2, "default": 1 },
+        "capacityMultiplier": { "type": "number", "minimum": 0, "maximum": 2, "default": 1 },
+        "priceMultiplier": { "type": "number", "minimum": 0.25, "maximum": 4, "default": 1 }
+      }
+    },
+    "SimulationRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contractVersion", "seed", "turns", "companies", "supplyLinks", "shocks"],
+      "properties": {
+        "contractVersion": { "const": "v1" }, "seed": { "type": "integer" },
+        "turns": { "type": "integer", "minimum": 1, "maximum": 120 },
+        "companies": { "type": "array", "minItems": 1, "maxItems": 5000, "items": { "$ref": "#/$defs/CompanyState" } },
+        "supplyLinks": { "type": "array", "maxItems": 20000, "items": { "$ref": "#/$defs/SupplyLink" } },
+        "shocks": { "type": "array", "maxItems": 20000, "items": { "$ref": "#/$defs/IndustrialShock" } }
+      }
+    },
+    "SimulationResult": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contractVersion", "seed", "turns", "snapshots", "finalState", "resultHash", "invariants"],
+      "properties": {
+        "contractVersion": { "const": "v1" }, "seed": { "type": "integer" }, "turns": { "type": "integer" },
+        "snapshots": { "type": "array", "items": { "type": "object" } },
+        "finalState": { "type": "array", "items": { "$ref": "#/$defs/CompanyState" } },
+        "resultHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "invariants": { "type": "object", "additionalProperties": { "type": "boolean" } }
+      }
+    },
+    "WorldBaseline": {
+      "type": "object", "additionalProperties": false,
+      "required": ["companies", "supplyLinks"],
+      "properties": {
+        "companies": { "type": "array", "minItems": 1, "maxItems": 5000, "items": { "$ref": "#/$defs/CompanyState" } },
+        "supplyLinks": { "type": "array", "maxItems": 20000, "items": { "$ref": "#/$defs/SupplyLink" } }
+      }
+    },
+    "CreateWorld": {
+      "type": "object", "additionalProperties": false, "required": ["name", "state"],
+      "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 160 }, "state": { "$ref": "#/$defs/WorldBaseline" } }
+    },
+    "ParallelSimulationRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["scenarioName", "seed", "turns", "branches"],
+      "properties": {
+        "scenarioName": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "seed": { "type": "integer" }, "turns": { "type": "integer", "minimum": 1, "maximum": 120 },
+        "branches": { "type": "array", "minItems": 2, "maxItems": 3, "items": {
+          "type": "object", "additionalProperties": false, "required": ["name", "shocks"],
+          "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 160 }, "shocks": { "type": "array", "items": { "$ref": "#/$defs/IndustrialShock" } } }
+        } }
+      }
+    },
+    "WorldVersionResponse": {
+      "type": "object", "additionalProperties": false,
+      "required": ["worldId", "versionId", "name", "state"],
+      "properties": {
+        "worldId": { "type": "string", "format": "uuid" },
+        "versionId": { "type": "string", "format": "uuid" },
+        "name": { "type": "string" }, "state": { "$ref": "#/$defs/WorldBaseline" }
+      }
+    },
+    "ParallelResult": {
+      "type": "object", "additionalProperties": false,
+      "required": ["scenarioId", "worldId", "worldVersionId", "runs"],
+      "properties": {
+        "scenarioId": { "type": "string", "format": "uuid" },
+        "worldId": { "type": "string", "format": "uuid" },
+        "worldVersionId": { "type": "string", "format": "uuid" },
+        "runs": { "type": "array", "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["id", "branchId", "branchName", "seed", "turns", "status", "resultHash", "finalState", "invariants", "failureReason", "requestedAt", "completedAt", "snapshots"],
+          "properties": {
+            "id": { "type": ["string", "null"], "format": "uuid" },
+            "branchId": { "type": "string", "format": "uuid" }, "branchName": { "type": "string" },
+            "seed": { "type": "integer" }, "turns": { "type": "integer" },
+            "status": { "enum": ["READY", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] },
+            "resultHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+            "finalState": { "type": ["array", "null"] }, "invariants": { "type": ["object", "null"] },
+            "failureReason": { "type": ["string", "null"] }, "requestedAt": { "type": ["string", "null"], "format": "date-time" },
+            "completedAt": { "type": ["string", "null"], "format": "date-time" },
+            "snapshots": { "type": "array", "items": { "type": "object" } }
+          }
+        } }
+      }
+    }
+  }
+}

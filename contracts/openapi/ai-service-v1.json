@@ -1,7 +1,14 @@
 {
   "openapi": "3.1.0",
-  "info": { "title": "NEXUS WORLD AI Service", "version": "1.0.0" },
+  "info": { "title": "NEXUS WORLD AI Service", "version": "1.1.0" },
   "paths": {
+    "/api/v1/simulations/execute": {
+      "post": {
+        "operationId": "executeDeterministicIndustrialSimulation",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/simulation-contract-v1.json#/$defs/SimulationRequest" } } } },
+        "responses": { "200": { "description": "Deterministic turn snapshots and final state", "content": { "application/json": { "schema": { "$ref": "../schemas/simulation-contract-v1.json#/$defs/SimulationResult" } } } }, "422": { "description": "Invalid state graph or bounded input" } }
+      }
+    },
     "/api/v1/retrieval/documents": {
       "post": {
         "operationId": "ingestRetrievalDocument",

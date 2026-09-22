@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.nexusworld.domain.id.WorldId;
 import com.nexusworld.infrastructure.graph.PostgresGraphEntitySearchStore;
+import com.nexusworld.infrastructure.simulation.JdbcSimulationStore;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -45,7 +48,7 @@ class DatabaseMigrationIntegrationTest {
     MigrateResult firstRun = flyway.migrate();
     MigrateResult secondRun = flyway.migrate();
 
-    assertThat(firstRun.migrationsExecuted).isEqualTo(13);
+    assertThat(firstRun.migrationsExecuted).isEqualTo(14);
     assertThat(secondRun.migrationsExecuted).isZero();
     assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 
@@ -365,6 +368,30 @@ class DatabaseMigrationIntegrationTest {
     var store = new PostgresGraphEntitySearchStore(new NamedParameterJdbcTemplate(dataSource));
     assertThat(store.search(version, "대만 팹 공급망 영향", "대만 OR 팹 OR 공급망 OR 영향", 5))
         .containsExactly(facility);
+  }
+
+  @Test
+  @Order(7)
+  void simulationStorePersistsTimestampedImmutableBaseline() throws Exception {
+    Flyway.configure()
+        .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+        .load()
+        .migrate();
+    var dataSource = new DriverManagerDataSource(
+        POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+    var store = new JdbcSimulationStore(new org.springframework.jdbc.core.JdbcTemplate(dataSource),
+        new ObjectMapper());
+    var state = new ObjectMapper().readTree("""
+        {"companies":[{"companyId":"c1"}],"supplyLinks":[]}
+        """);
+    var created = store.createWorld("Store integration world", state,
+        Instant.parse("2026-01-01T00:00:00Z"));
+    assertThat(store.getWorldVersion(created.versionId()).state()).isEqualTo(state);
+    try (Connection connection = POSTGRES.createConnection("")) {
+      assertThatThrownBy(() -> execute(connection,
+          "UPDATE world_versions SET state='{}'::jsonb WHERE id=?", created.versionId()))
+          .hasMessageContaining("world_versions are immutable");
+    }
   }
 
   private void execute(Connection connection, String sql, Object... values) throws Exception {

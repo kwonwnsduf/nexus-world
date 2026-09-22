@@ -1,6 +1,6 @@
 {
   "openapi": "3.1.0",
-  "info": { "title": "NEXUS WORLD Core API", "version": "1.6.0" },
+  "info": { "title": "NEXUS WORLD Core API", "version": "1.7.0" },
   "components": {
     "securitySchemes": {
       "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
@@ -70,6 +70,24 @@
     }
   },
   "paths": {
+    "/api/v1/worlds": {
+      "post": { "operationId": "createSimulationWorld", "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/simulation-contract-v1.json#/$defs/CreateWorld" } } } },
+        "responses": { "201": { "description": "Immutable baseline world version created", "content": { "application/json": { "schema": { "$ref": "../schemas/simulation-contract-v1.json#/$defs/WorldVersionResponse" } } } }, "400": { "description": "Invalid baseline" } } }
+    },
+    "/api/v1/world-versions/{versionId}/parallel-simulations": {
+      "post": { "operationId": "executeParallelSimulation", "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "versionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/simulation-contract-v1.json#/$defs/ParallelSimulationRequest" } } } },
+        "responses": { "201": { "description": "Two or three isolated branches executed with persisted turn checkpoints", "content": { "application/json": { "schema": { "$ref": "../schemas/simulation-contract-v1.json#/$defs/ParallelResult" } } } }, "400": { "description": "Invalid branch plan" }, "404": { "description": "World version not found" }, "502": { "description": "Numerical simulation engine failed" } }
+      }
+    },
+    "/api/v1/parallel-simulations/{scenarioId}": {
+      "get": { "operationId": "getParallelSimulation", "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "scenarioId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Branch run status, hashes, snapshots, and final states", "content": { "application/json": { "schema": { "$ref": "../schemas/simulation-contract-v1.json#/$defs/ParallelResult" } } } }, "404": { "description": "Parallel simulation not found" } }
+      }
+    },
     "/api/v1/platform/status": {
       "get": {
         "operationId": "getPlatformStatus",

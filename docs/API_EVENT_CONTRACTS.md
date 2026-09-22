@@ -35,3 +35,10 @@ reports whether reranking was applied. Payload definitions live in `contracts/sc
 GraphRAG uses `POST /api/v1/graphrag/query` with a world version and a bounded free-text query. Core API resolves indexed
 PostgreSQL exact-alias, trigram, and FTS candidates, then the AI service requests one-to-three-hop Neo4j paths and returns
 ranked paths, graph evidence, and Day 17 text citations under `contracts/schemas/graphrag-contract-v1.json`.
+
+## Deterministic simulation and parallel worlds v1
+
+The AI service exposes `POST /api/v1/simulations/execute` for bounded deterministic numerical execution. Core API exposes
+`POST /api/v1/worlds`, `POST /api/v1/world-versions/{versionId}/parallel-simulations`, and
+`GET /api/v1/parallel-simulations/{scenarioId}`. Payload constraints are defined in
+`contracts/schemas/simulation-contract-v1.json`. Public callers cannot overwrite a baseline or write a turn snapshot.

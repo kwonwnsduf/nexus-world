@@ -44,10 +44,19 @@ for (const file of await readdir(path.join(contractRoot, "openapi"))) {
     if (!document.paths["/api/v1/world-versions/{versionId}/graph/projections"]?.post) throw new Error(`${file} is missing Neo4j projection contract`);
     if (!document.paths["/api/v1/world-versions/{versionId}/graph/paths/{rootEntityId}"]?.get) throw new Error(`${file} is missing bounded graph path contract`);
     if (!document.paths["/api/v1/world-versions/{versionId}/graph/entities/matches"]?.get) throw new Error(`${file} is missing graph alias match contract`);
+    if (!document.paths["/api/v1/worlds"]?.post) throw new Error(`${file} is missing world creation contract`);
+    if (!document.paths["/api/v1/world-versions/{versionId}/parallel-simulations"]?.post) throw new Error(`${file} is missing parallel simulation contract`);
+    if (!document.paths["/api/v1/parallel-simulations/{scenarioId}"]?.get) throw new Error(`${file} is missing parallel simulation read contract`);
   }
   if (file === "ai-service-v1.json") {
     if (!document.paths["/api/v1/graphrag/query"]?.post) throw new Error(`${file} is missing GraphRAG query contract`);
+    if (!document.paths["/api/v1/simulations/execute"]?.post) throw new Error(`${file} is missing deterministic simulation contract`);
   }
+}
+
+const simulationSchema = JSON.parse(await readFile(path.join(contractRoot, "schemas", "simulation-contract-v1.json"), "utf8"));
+for (const definition of ["CompanyState", "SupplyLink", "IndustrialShock", "SimulationRequest", "SimulationResult", "WorldBaseline", "CreateWorld", "ParallelSimulationRequest", "WorldVersionResponse", "ParallelResult"]) {
+  if (!simulationSchema.$defs?.[definition]) throw new Error(`simulation-contract-v1.json is missing ${definition}`);
 }
 
 const schema = JSON.parse(
