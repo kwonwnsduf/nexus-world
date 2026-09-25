@@ -29,6 +29,6 @@ def test_capabilities_match_v1_contract() -> None:
         "retrieval",
         "agent-orchestration",
         "population-synthesis",
+        "scenario-interpretation",
         "deterministic-simulation",
     ]
-

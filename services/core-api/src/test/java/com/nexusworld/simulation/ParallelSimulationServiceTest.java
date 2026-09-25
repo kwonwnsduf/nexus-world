@@ -22,7 +22,7 @@ class ParallelSimulationServiceTest {
   private final ObjectMapper json = new ObjectMapper();
 
   @Test
-  void forksUseIndependentInputsAndDeterministicDistinctSeeds() throws Exception {
+  void forksUseIndependentInputsAndTheSameComparisonSeed() throws Exception {
     SimulationStore store = mock(SimulationStore.class);
     IndustrialSimulationClient engine = mock(IndustrialSimulationClient.class);
     UUID world = UUID.randomUUID(), version = UUID.randomUUID(), scenario = UUID.randomUUID();
@@ -61,7 +61,7 @@ class ParallelSimulationServiceTest {
     ArgumentCaptor<JsonNode> requests = ArgumentCaptor.forClass(JsonNode.class);
     verify(engine, times(3)).execute(requests.capture());
     assertThat(requests.getAllValues()).extracting(value -> value.path("seed").asLong())
-        .containsExactly(100L, 101L, 102L);
+        .containsExactly(100L, 100L, 100L);
     assertThat(requests.getAllValues()).extracting(value -> value.path("shocks").size())
         .containsExactly(0, 1, 1);
     assertThat(baseline.has("shocks")).isFalse();

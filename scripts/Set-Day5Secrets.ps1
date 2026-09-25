@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$TerraformDirectory = ".\infra\aws\day5"
+    [string]$TerraformDirectory = ".\infra\aws\day5",
+    [switch]$ConfigureOptionalAiServices
 )
 
 $ErrorActionPreference = "Stop"
@@ -55,5 +56,27 @@ Set-SecureParameter "$prefix/postgres-password" $postgresPassword $region
 Set-SecureParameter "$prefix/jwt-secret-base64" $jwtSecret $region
 Set-SecureParameter "$prefix/bootstrap-admin-username" $adminUsername $region
 Set-SecureParameter "$prefix/bootstrap-admin-password" $adminPassword $region
+
+if ($ConfigureOptionalAiServices) {
+    $openAiApiKey = Get-PlainText (Read-Host "OpenAI API key (blank to omit)" -AsSecureString)
+    $unComtradeApiKey = Get-PlainText (Read-Host "UN Comtrade API key (blank to omit)" -AsSecureString)
+    $neo4jUri = Read-Host "Neo4j Aura URI (blank to omit)"
+    if ($openAiApiKey) {
+        Set-SecureParameter "$prefix/openai-api-key" $openAiApiKey $region
+    }
+    if ($unComtradeApiKey) {
+        Set-SecureParameter "$prefix/un-comtrade-api-key" $unComtradeApiKey $region
+    }
+    if ($neo4jUri) {
+        $neo4jUsername = Read-Host "Neo4j username"
+        $neo4jPassword = Get-PlainText (Read-Host "Neo4j password" -AsSecureString)
+        $neo4jDatabase = Read-Host "Neo4j database (default: neo4j)"
+        if (-not $neo4jDatabase) { $neo4jDatabase = "neo4j" }
+        Set-SecureParameter "$prefix/neo4j-uri" $neo4jUri $region
+        Set-SecureParameter "$prefix/neo4j-username" $neo4jUsername $region
+        Set-SecureParameter "$prefix/neo4j-password" $neo4jPassword $region
+        Set-SecureParameter "$prefix/neo4j-database" $neo4jDatabase $region
+    }
+}
 
 Write-Host "Runtime secrets stored under $prefix. Values were not written to Terraform state."

@@ -9,3 +9,13 @@ Day 5 adds a cost-conscious AWS deployment path: Terraform provisions one EC2 in
 RDS, a load balancer, private application subnets/NAT, and ECS or k3s remain explicit scaling decisions. They are added only after resource baselines, recovery objectives, or availability requirements justify them.
 
 Later operations work adds OpenTelemetry propagation, metrics, structured logs, SLOs, and incident runbooks.
+
+Day 21 turns the supply-chain demo into a deployment gate. A release is promoted only after the Nginx → Web → Core →
+AI → PostgreSQL path completes three deterministic parallel branches with all invariants passing. The deployment then
+stores CPU, memory, disk, and per-container usage as JSON under `/opt/nexus-world/shared/baselines/` and in the private
+artifact bucket under `baselines/`. See `docs/days/DAY-21.md` for the exact acceptance criteria.
+
+The production AI container receives both `CORE_API_URL` and `RAG_DATABASE_URL`. The first closes the GraphRAG
+AI→Core loop; the second persists retrieval chunks in the existing PostgreSQL deployment instead of process memory.
+OpenAI and Neo4j Aura credentials are optional SSM parameters. If no Neo4j URI/password exists, projection remains
+explicitly disabled rather than pretending that the graph store is connected.

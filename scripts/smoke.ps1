@@ -62,6 +62,13 @@ foreach ($check in $contractChecks) {
     Write-Host "[OK] $($check.Name) $($check.Url)"
 }
 
+& docker compose exec -T ai-service python -c `
+    'import os, psycopg; value=os.environ.get(\"RAG_DATABASE_URL\"); assert value; connection=psycopg.connect(value); connection.execute(\"SELECT 1\"); connection.close()'
+if ($LASTEXITCODE -ne 0) {
+    throw "[FAIL] AI retrieval repository could not connect to PostgreSQL"
+}
+Write-Host "[OK] AI retrieval repository to PostgreSQL connectivity"
+
 $loginBody = @{
     username = if ($env:BOOTSTRAP_ADMIN_USERNAME) { $env:BOOTSTRAP_ADMIN_USERNAME } else { "admin" }
     password = if ($env:BOOTSTRAP_ADMIN_PASSWORD) { $env:BOOTSTRAP_ADMIN_PASSWORD } else { "nexus-world-local-admin" }
@@ -100,4 +107,24 @@ if ($revokedStatus -ne 401) {
 }
 Write-Host "[OK] refresh rotation, logout, and access-token blacklist"
 
-Write-Host "All NEXUS WORLD health, contract, persistence, and Day 4 authentication checks passed."
+if ($env:RUN_GROUNDED_E2E -eq "true") {
+    $demoBody = @{ query = "중국 반도체 공급이 50% 감소하면?" } | ConvertTo-Json
+    $demoBytes = [Text.Encoding]::UTF8.GetBytes($demoBody)
+    $demo = Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:$webPort/api/demo/supply-chain" `
+        -ContentType "application/json; charset=utf-8" -Body $demoBytes -TimeoutSec 90
+    if ($demo.contractVersion -ne "v2" -or -not $demo.worldVersionId -or -not $demo.target.entityId) {
+        throw "[FAIL] grounded workflow did not return its v2 world and resolved entity"
+    }
+    if ($demo.status -eq "COMPLETED") {
+        if ($demo.branches.Count -ne 3 -or ($demo.branches | Where-Object { -not $_.invariantsPassed }).Count -gt 0) {
+            throw "[FAIL] grounded workflow returned invalid A/B/C results"
+        }
+    } elseif ($demo.status -ne "INSUFFICIENT_DATA" -or $demo.branches.Count -ne 0) {
+        throw "[FAIL] grounded workflow neither completed nor failed closed for missing data"
+    }
+    Write-Host "[OK] grounded ingestion-world-GraphRAG-simulation contract"
+} else {
+    Write-Host "[SKIP] grounded external-data E2E (set RUN_GROUNDED_E2E=true after ingestion)"
+}
+
+Write-Host "All NEXUS WORLD health, contract, persistence, and authentication checks passed."

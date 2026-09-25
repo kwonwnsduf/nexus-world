@@ -33,6 +33,34 @@ public class JdbcSimulationStore implements SimulationStore {
     return new WorldVersion(worldId, versionId, name, state.deepCopy());
   }
 
+  @Override @Transactional
+  public WorldVersion createNextWorldVersion(String worldName, JsonNode state, Instant now) {
+    List<UUID> existing = jdbc.query("SELECT id FROM worlds WHERE name=? ORDER BY created_at LIMIT 1 FOR UPDATE",
+        (rs, row) -> rs.getObject(1, UUID.class), worldName);
+    if (existing.isEmpty()) return createWorld(worldName, state, now);
+    UUID worldId = existing.get(0);
+    Integer next = jdbc.queryForObject(
+        "SELECT COALESCE(MAX(version_number),0)+1 FROM world_versions WHERE world_id=?",
+        Integer.class, worldId);
+    UUID versionId = UUID.randomUUID();
+    jdbc.update("INSERT INTO world_versions(id,world_id,version_number,state,created_at) VALUES (?,?,?,?::jsonb,?)",
+        versionId, worldId, next, state.toString(), timestamp(now));
+    jdbc.update("UPDATE worlds SET updated_at=? WHERE id=?", timestamp(now), worldId);
+    return new WorldVersion(worldId, versionId, worldName, state.deepCopy());
+  }
+
+  @Override
+  public boolean hasWorldSnapshot(String worldName, String snapshotFingerprint) {
+    Integer count = jdbc.queryForObject("""
+        SELECT count(*) FROM world_versions v JOIN worlds w ON w.id=v.world_id
+        WHERE w.name=? AND v.state->'manifest'->>'snapshotFingerprint'=?
+          AND v.state->'manifest'->>'retrievalIndexStatus'='READY'
+          AND v.state->'manifest'->'retrievalDocumentCount' IS NOT NULL
+          AND v.state->'manifest'->>'createdAt' IS NOT NULL
+        """, Integer.class, worldName, snapshotFingerprint);
+    return count != null && count > 0;
+  }
+
   @Override
   public WorldVersion getWorldVersion(UUID versionId) {
     List<WorldVersion> found = jdbc.query("SELECT w.id,w.name,v.state FROM world_versions v JOIN worlds w ON w.id=v.world_id WHERE v.id=?",

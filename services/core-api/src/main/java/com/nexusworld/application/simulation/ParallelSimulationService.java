@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,13 +24,22 @@ public class ParallelSimulationService {
   private final IndustrialSimulationClient engine;
   private final ObjectMapper json;
   private final Clock clock;
+  private final Neo4jSimulationGraphExpander graphExpander;
 
+  @Autowired
   public ParallelSimulationService(SimulationStore store, IndustrialSimulationClient engine,
-      ObjectMapper json, Clock clock) {
+      ObjectMapper json, Clock clock, Neo4jSimulationGraphExpander graphExpander) {
     this.store = store;
     this.engine = engine;
     this.json = json;
     this.clock = clock;
+    this.graphExpander = graphExpander;
+  }
+
+  /** Compatibility constructor for isolated service tests and non-Spring callers. */
+  public ParallelSimulationService(SimulationStore store, IndustrialSimulationClient engine,
+      ObjectMapper json, Clock clock) {
+    this(store, engine, json, clock, null);
   }
 
   public WorldVersion createWorld(String name, JsonNode state) {
@@ -39,6 +49,11 @@ public class ParallelSimulationService {
 
   public ParallelResult execute(UUID versionId, String scenarioName, long seed, int turns,
       List<BranchInput> branchInputs) {
+    return execute(versionId, scenarioName, seed, turns, branchInputs, "WORLD_VERSION", 120);
+  }
+
+  public ParallelResult execute(UUID versionId, String scenarioName, long seed, int turns,
+      List<BranchInput> branchInputs, String graphTraversal, int maxDepth) {
     if (turns < 1 || turns > 120) throw new IllegalArgumentException("turns must be between 1 and 120");
     if (branchInputs.size() < 2 || branchInputs.size() > 3) {
       throw new IllegalArgumentException("parallel simulation requires two or three branches");
@@ -47,18 +62,48 @@ public class ParallelSimulationService {
         != branchInputs.size()) throw new IllegalArgumentException("branch names must be unique");
     WorldVersion baseline = store.getWorldVersion(versionId);
     Set<String> companyIds = validateBaseline(baseline.state());
-    validateBranches(branchInputs, companyIds, turns);
+    boolean relationshipGraph = "relationship-graph-v1".equals(
+        baseline.state().path("simulationModel").asText());
+    boolean neo4jTraversal = "NEO4J_PATHS".equals(graphTraversal);
+    if (!Set.of("WORLD_VERSION", "NEO4J_PATHS").contains(graphTraversal)) {
+      throw new IllegalArgumentException("graphTraversal mode is not supported");
+    }
+    if (neo4jTraversal && !relationshipGraph) {
+      throw new IllegalArgumentException("NEO4J_PATHS is only available for relationship graphs");
+    }
+    if (neo4jTraversal && graphExpander == null) {
+      throw new IllegalStateException("Neo4j graph expansion is not configured");
+    }
+    validateBranches(branchInputs, companyIds, turns, relationshipGraph);
     ParallelSetup setup = store.createParallelSetup(versionId, scenarioName.trim(), branchInputs,
         clock.instant());
     for (int index = 0; index < setup.branches().size(); index++) {
       Branch branch = setup.branches().get(index);
-      long branchSeed = Math.addExact(seed, index);
+      long branchSeed = seed;
       ObjectNode request = json.createObjectNode();
       request.put("contractVersion", "v1");
       request.put("seed", branchSeed);
       request.put("turns", turns);
-      request.set("companies", baseline.state().get("companies").deepCopy());
-      request.set("supplyLinks", baseline.state().get("supplyLinks").deepCopy());
+      if (relationshipGraph) {
+        request.put("simulationModel", "relationship-graph-v1");
+        if (neo4jTraversal) {
+          var expanded = graphExpander.expand(versionId, baseline.state(),
+              branch.input().path("shocks"), maxDepth);
+          request.set("nodes", expanded.nodes());
+          request.set("relationships", expanded.relationships());
+          request.put("traversalMode", "NEO4J_PATHS");
+          request.put("maxPropagationDepth", expanded.maxDepth());
+        } else {
+          request.set("nodes", baseline.state().get("nodes").deepCopy());
+          request.set("relationships", baseline.state().get("relationships").deepCopy());
+          request.put("traversalMode", "WORLD_VERSION");
+          request.put("maxPropagationDepth", Math.min(120, Math.max(1, maxDepth)));
+        }
+        request.put("strategy", branch.input().path("strategy").asText("NONE"));
+      } else {
+        request.set("companies", baseline.state().get("companies").deepCopy());
+        request.set("supplyLinks", baseline.state().get("supplyLinks").deepCopy());
+      }
       request.set("shocks", branch.input().path("shocks").deepCopy());
       String requestHash = sha256(request);
       UUID runId = store.createRun(branch.id(), branchSeed, turns, requestHash, clock.instant());
@@ -76,6 +121,8 @@ public class ParallelSimulationService {
   public ParallelResult get(UUID scenarioId) { return store.getParallelResult(scenarioId); }
 
   private Set<String> validateBaseline(JsonNode state) {
+    if (state != null && "relationship-graph-v1".equals(
+        state.path("simulationModel").asText())) return validateRelationshipGraph(state);
     if (state == null || !state.isObject() || !state.path("companies").isArray()
         || state.path("companies").isEmpty() || !state.path("supplyLinks").isArray()) {
       throw new IllegalArgumentException("state must contain non-empty companies and supplyLinks arrays");
@@ -116,7 +163,45 @@ public class ParallelSimulationService {
     return Set.copyOf(companyIds);
   }
 
-  private void validateBranches(List<BranchInput> branches, Set<String> companyIds, int turns) {
+  private Set<String> validateRelationshipGraph(JsonNode state) {
+    if (!state.path("nodes").isArray() || state.path("nodes").isEmpty()
+        || !state.path("relationships").isArray() || !state.path("manifest").isObject()) {
+      throw new IllegalArgumentException(
+          "relationship graph requires nodes, relationships, and a version manifest");
+    }
+    Set<String> ids = new HashSet<>();
+    for (JsonNode node : state.path("nodes")) {
+      String id = requiredText(node, "entityId");
+      requiredText(node, "entityType");
+      if (!node.path("metrics").isObject() || !node.path("provenance").isObject()) {
+        throw new IllegalArgumentException("graph node metrics require value-level provenance");
+      }
+      if (!ids.add(id)) throw new IllegalArgumentException("graph entity ids must be unique");
+    }
+    for (JsonNode edge : state.path("relationships")) {
+      String source = requiredText(edge, "sourceEntityId");
+      String target = requiredText(edge, "targetEntityId");
+      String type = requiredText(edge, "relationshipType");
+      if (!ids.contains(source) || !ids.contains(target) || source.equals(target)) {
+        throw new IllegalArgumentException("graph relationship endpoints are invalid");
+      }
+      if (!Set.of("TRADE_FLOW", "SUPPLIES", "DEPENDS_ON", "PRODUCES", "SHIPS_VIA")
+          .contains(type)) {
+        throw new IllegalArgumentException("unsupported quantitative relationship type " + type);
+      }
+      if (!edge.path("parameters").has("dependencyRatio")) {
+        throw new IllegalArgumentException("quantitative relationship is missing dependencyRatio");
+      }
+      bounded(edge.path("parameters"), "dependencyRatio", 0, 1);
+      if (!edge.path("provenance").isObject()) {
+        throw new IllegalArgumentException("graph relationship parameters require provenance");
+      }
+    }
+    return Set.copyOf(ids);
+  }
+
+  private void validateBranches(List<BranchInput> branches, Set<String> companyIds, int turns,
+      boolean relationshipGraph) {
     for (BranchInput branch : branches) {
       JsonNode shocks = branch.input().path("shocks");
       if (!shocks.isArray() || shocks.size() > 20000) {
@@ -124,17 +209,25 @@ public class ParallelSimulationService {
       }
       Set<String> keys = new HashSet<>();
       for (JsonNode shock : shocks) {
-        String companyId = requiredText(shock, "companyId");
+        String companyId = requiredText(shock, relationshipGraph ? "entityId" : "companyId");
         int turn = shock.path("turn").asInt(0);
         if (!companyIds.contains(companyId)) throw new IllegalArgumentException("shocks must reference known companies");
         if (turn < 1 || turn > turns) throw new IllegalArgumentException("shock turn must be within the run horizon");
         if (!keys.add(companyId + "\u0000" + turn)) {
           throw new IllegalArgumentException("duplicate company shock in the same turn is not allowed");
         }
-        bounded(shock, "supplyMultiplier", 0, 2);
-        bounded(shock, "demandMultiplier", 0, 2);
-        bounded(shock, "capacityMultiplier", 0, 2);
-        bounded(shock, "priceMultiplier", 0.25, 4);
+        if (relationshipGraph) {
+          requiredText(shock, "metric");
+          bounded(shock, "change", -1, 1);
+          if (!"USER_ASSUMPTION".equals(shock.path("basisType").asText())) {
+            throw new IllegalArgumentException("graph shock basis must be USER_ASSUMPTION");
+          }
+        } else {
+          bounded(shock, "supplyMultiplier", 0, 2);
+          bounded(shock, "demandMultiplier", 0, 2);
+          bounded(shock, "capacityMultiplier", 0, 2);
+          bounded(shock, "priceMultiplier", 0.25, 4);
+        }
       }
     }
   }

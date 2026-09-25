@@ -22,6 +22,7 @@ public class IngestionService {
   private final ObjectMapper mapper;
   private final Clock clock;
   private final TransactionTemplate transactions;
+  private final List<IngestionCompletionHandler> completionHandlers;
 
   public IngestionService(
       List<ExternalDataAdapter> adapters,
@@ -32,7 +33,8 @@ public class IngestionService {
       RecordValidator validator,
       ObjectMapper mapper,
       Clock clock,
-      TransactionTemplate transactions) {
+      TransactionTemplate transactions,
+      List<IngestionCompletionHandler> completionHandlers) {
     this.adapters =
         adapters.stream()
             .collect(
@@ -45,6 +47,7 @@ public class IngestionService {
     this.mapper = mapper;
     this.clock = clock;
     this.transactions = transactions;
+    this.completionHandlers = List.copyOf(completionHandlers);
   }
 
   public IngestionResult ingest(SourceSystem source, JsonNode parameters, UUID actor) {
@@ -96,6 +99,11 @@ public class IngestionService {
             runs.save(current);
           });
       throw e;
+    }
+    if (pages > 0) {
+      for (IngestionCompletionHandler handler : completionHandlers) {
+        handler.onCompleted(run.getId(), source, normalized, actor);
+      }
     }
     return result(runs.findById(run.getId()).orElseThrow());
   }

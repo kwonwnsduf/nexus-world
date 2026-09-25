@@ -75,6 +75,18 @@
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/simulation-contract-v1.json#/$defs/CreateWorld" } } } },
         "responses": { "201": { "description": "Immutable baseline world version created", "content": { "application/json": { "schema": { "$ref": "../schemas/simulation-contract-v1.json#/$defs/WorldVersionResponse" } } } }, "400": { "description": "Invalid baseline" } } }
     },
+    "/api/v1/scenario-runs/from-query": {
+      "post": { "operationId": "executeScenarioFromNaturalLanguage", "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/scenario-workflow-contract-v1.json#/$defs/ScenarioQuery" } } } },
+        "responses": {
+          "200": { "description": "Graph evidence returned but quantitative coverage is insufficient", "content": { "application/json": { "schema": { "$ref": "../schemas/scenario-workflow-contract-v1.json#/$defs/ScenarioWorkflowResult" } } } },
+          "201": { "description": "Grounded input and completed three-world simulation", "content": { "application/json": { "schema": { "$ref": "../schemas/scenario-workflow-contract-v1.json#/$defs/ScenarioWorkflowResult" } } } },
+          "400": { "description": "Structured shock violates Core bounds" },
+          "404": { "description": "No data-built world or resolved target exists" },
+          "502": { "description": "Structured extraction, GraphRAG, or numerical engine unavailable" }
+        }
+      }
+    },
     "/api/v1/world-versions/{versionId}/parallel-simulations": {
       "post": { "operationId": "executeParallelSimulation", "security": [{ "bearerAuth": [] }],
         "parameters": [{ "name": "versionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],

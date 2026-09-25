@@ -47,15 +47,17 @@ for (const file of await readdir(path.join(contractRoot, "openapi"))) {
     if (!document.paths["/api/v1/worlds"]?.post) throw new Error(`${file} is missing world creation contract`);
     if (!document.paths["/api/v1/world-versions/{versionId}/parallel-simulations"]?.post) throw new Error(`${file} is missing parallel simulation contract`);
     if (!document.paths["/api/v1/parallel-simulations/{scenarioId}"]?.get) throw new Error(`${file} is missing parallel simulation read contract`);
+    if (!document.paths["/api/v1/scenario-runs/from-query"]?.post) throw new Error(`${file} is missing natural-language scenario workflow contract`);
   }
   if (file === "ai-service-v1.json") {
     if (!document.paths["/api/v1/graphrag/query"]?.post) throw new Error(`${file} is missing GraphRAG query contract`);
     if (!document.paths["/api/v1/simulations/execute"]?.post) throw new Error(`${file} is missing deterministic simulation contract`);
+    if (!document.paths["/api/v1/scenarios/interpret"]?.post) throw new Error(`${file} is missing scenario interpretation contract`);
   }
 }
 
 const simulationSchema = JSON.parse(await readFile(path.join(contractRoot, "schemas", "simulation-contract-v1.json"), "utf8"));
-for (const definition of ["CompanyState", "SupplyLink", "IndustrialShock", "SimulationRequest", "SimulationResult", "WorldBaseline", "CreateWorld", "ParallelSimulationRequest", "WorldVersionResponse", "ParallelResult"]) {
+for (const definition of ["CompanyState", "SupplyLink", "IndustrialShock", "SimulationRequest", "SimulationResult", "GraphNode", "GraphRelationship", "GraphShock", "GraphSimulationRequest", "GraphSimulationResult", "WorldBaseline", "CreateWorld", "ParallelSimulationRequest", "WorldVersionResponse", "ParallelResult"]) {
   if (!simulationSchema.$defs?.[definition]) throw new Error(`simulation-contract-v1.json is missing ${definition}`);
 }
 
@@ -101,6 +103,11 @@ for (const definition of [
 const graphRagSchema = JSON.parse(await readFile(path.join(contractRoot, "schemas", "graphrag-contract-v1.json"), "utf8"));
 for (const definition of ["GraphRagQuery", "GraphEvidence", "RankedPath", "GraphRagResult"]) {
   if (!graphRagSchema.$defs?.[definition]) throw new Error(`graphrag-contract-v1.json is missing ${definition}`);
+}
+
+const scenarioWorkflowSchema = JSON.parse(await readFile(path.join(contractRoot, "schemas", "scenario-workflow-contract-v1.json"), "utf8"));
+for (const definition of ["ScenarioQuery", "ScenarioCandidate", "ShockDefinition", "ScenarioWorkflowResult"]) {
+  if (!scenarioWorkflowSchema.$defs?.[definition]) throw new Error(`scenario-workflow-contract-v1.json is missing ${definition}`);
 }
 
 const ingestionSchema = JSON.parse(await readFile(path.join(contractRoot, "schemas", "ingestion-contract-v1.json"), "utf8"));

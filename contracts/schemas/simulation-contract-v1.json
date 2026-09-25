@@ -63,6 +63,63 @@
         "invariants": { "type": "object", "additionalProperties": { "type": "boolean" } }
       }
     },
+    "GraphNode": {
+      "type": "object", "additionalProperties": false,
+      "required": ["entityId", "entityType", "displayName", "metrics", "provenance"],
+      "properties": {
+        "entityId": { "type": "string" }, "entityType": { "type": "string" },
+        "displayName": { "type": "string" },
+        "metrics": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0 } },
+        "provenance": { "type": "object" }
+      }
+    },
+    "GraphRelationship": {
+      "type": "object", "additionalProperties": false,
+      "required": ["relationshipId", "relationshipType", "sourceEntityId", "targetEntityId", "parameters", "provenance"],
+      "properties": {
+        "relationshipId": { "type": "string" },
+        "relationshipType": { "enum": ["TRADE_FLOW", "SUPPLIES", "DEPENDS_ON", "PRODUCES", "SHIPS_VIA"] },
+        "sourceEntityId": { "type": "string" }, "targetEntityId": { "type": "string" },
+        "parameters": { "type": "object", "additionalProperties": { "type": "number" } },
+        "provenance": { "type": "object" }
+      }
+    },
+    "GraphShock": {
+      "type": "object", "additionalProperties": false,
+      "required": ["entityId", "metric", "change", "turn", "basisType"],
+      "properties": {
+        "entityId": { "type": "string" }, "metric": { "type": "string" },
+        "change": { "type": "number", "minimum": -1, "maximum": 1 },
+        "turn": { "type": "integer", "minimum": 1, "maximum": 120 },
+        "duration": { "type": ["integer", "null"], "minimum": 1, "maximum": 120 },
+        "basisType": { "const": "USER_ASSUMPTION" }
+      }
+    },
+    "GraphSimulationRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contractVersion", "simulationModel", "seed", "turns", "nodes", "relationships", "shocks", "strategy"],
+      "properties": {
+        "contractVersion": { "const": "v1" }, "simulationModel": { "const": "relationship-graph-v1" },
+        "seed": { "type": "integer" }, "turns": { "type": "integer", "minimum": 1, "maximum": 120 },
+        "nodes": { "type": "array", "minItems": 1, "maxItems": 5000, "items": { "$ref": "#/$defs/GraphNode" } },
+        "relationships": { "type": "array", "maxItems": 20000, "items": { "$ref": "#/$defs/GraphRelationship" } },
+        "shocks": { "type": "array", "maxItems": 20000, "items": { "$ref": "#/$defs/GraphShock" } },
+        "strategy": { "enum": ["NONE", "OBSERVED_ALTERNATIVE_SUPPLY"] },
+        "traversalMode": { "enum": ["WORLD_VERSION", "NEO4J_PATHS"], "default": "WORLD_VERSION" },
+        "maxPropagationDepth": { "type": "integer", "minimum": 1, "maximum": 120, "default": 120 }
+      }
+    },
+    "GraphSimulationResult": {
+      "type": "object",
+      "required": ["contractVersion", "seed", "turns", "snapshots", "finalState", "resultHash", "invariants"],
+      "properties": {
+        "contractVersion": { "const": "v1" }, "seed": { "type": "integer" }, "turns": { "type": "integer" },
+        "snapshots": { "type": "array", "items": { "type": "object" } },
+        "finalState": { "type": "array", "items": { "type": "object" } },
+        "resultHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "invariants": { "type": "object", "additionalProperties": { "type": "boolean" } }
+      }
+    },
     "WorldBaseline": {
       "type": "object", "additionalProperties": false,
       "required": ["companies", "supplyLinks"],
@@ -81,9 +138,17 @@
       "properties": {
         "scenarioName": { "type": "string", "minLength": 1, "maxLength": 160 },
         "seed": { "type": "integer" }, "turns": { "type": "integer", "minimum": 1, "maximum": 120 },
+        "graphTraversal": {
+          "type": "object", "additionalProperties": false,
+          "required": ["mode", "maxDepth"],
+          "properties": {
+            "mode": { "enum": ["WORLD_VERSION", "NEO4J_PATHS"] },
+            "maxDepth": { "type": "integer", "minimum": 1, "maximum": 120 }
+          }
+        },
         "branches": { "type": "array", "minItems": 2, "maxItems": 3, "items": {
           "type": "object", "additionalProperties": false, "required": ["name", "shocks"],
-          "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 160 }, "shocks": { "type": "array", "items": { "$ref": "#/$defs/IndustrialShock" } } }
+          "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 160 }, "shocks": { "type": "array", "items": { "oneOf": [{ "$ref": "#/$defs/IndustrialShock" }, { "$ref": "#/$defs/GraphShock" }] } } }
         } }
       }
     },

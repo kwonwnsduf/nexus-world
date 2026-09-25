@@ -88,7 +88,9 @@ public class SecAdapter extends AdapterSupport {
               date(filed),
               null,
               page.sourceVersion(),
-              dimensions("cik", cik, "companyName", root.path("name").asText()),
+              dimensions("cik", cik, "companyName", root.path("name").asText(),
+                  "sic", text(root, "sic"), "sicDescription", text(root, "sicDescription"),
+                  "tickers", root.path("tickers").toString()),
               raw,
               raw));
     }

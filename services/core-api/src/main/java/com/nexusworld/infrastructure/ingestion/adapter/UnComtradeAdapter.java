@@ -38,10 +38,11 @@ public class UnComtradeAdapter extends AdapterSupport {
     x.put("flowCode", param(q, "flowCode", "X"));
     x.put("cmdCode", param(q, "cmdCode", "TOTAL"));
     x.put("maxRecords", param(q, "maxRecords", "100000"));
-    x.put("aggregateBy", param(q, "aggregateBy", "6"));
-    x.put("subscription-key", p.unComtradeApiKey());
+    x.put("includeDesc", "true");
     URI u = UriTools.build(p.endpoints().unComtrade(), "/data/v1/get/C/A/" + classification, x);
-    return List.of(http.get(u, 1, "UN-Comtrade-v1", Map.of("Accept", "application/json"), 1));
+    return List.of(http.get(u, 1, "UN-Comtrade-v1",
+        Map.of("Accept", "application/json",
+            "Ocp-Apim-Subscription-Key", p.unComtradeApiKey()), 1));
   }
 
   public List<ParsedRecord> parse(FetchedPage page, JsonNode q) {
@@ -69,8 +70,16 @@ public class UnComtradeAdapter extends AdapterSupport {
               null,
               text(n, "isReported", "isAggregate"),
               dimensions(
+                  "reporterName",
+                  text(n, "reporterDesc", "reporterISO"),
+                  "reporterIso",
+                  text(n, "reporterISO"),
                   "partnerCode",
                   partner,
+                  "partnerName",
+                  text(n, "partnerDesc", "partnerISO"),
+                  "partnerIso",
+                  text(n, "partnerISO"),
                   "flowCode",
                   flow,
                   "customsCode",

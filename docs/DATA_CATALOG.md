@@ -78,3 +78,10 @@ Invalid rows are quarantined in `ingestion_rejections` instead of being silently
 
 Credentials are injected from the environment and are redacted before request URIs are persisted. Country code scheme,
 classification/version, currency, unit, period, data version, source-native dimensions, and source record are preserved.
+
+Normalized records are projected into the world graph by source semantics rather than being left as
+unconnected JSON. Aggregate statistical observations become `STATISTICAL_INDICATOR` nodes linked by
+`HAS_INDICATOR`; company classification becomes `CLASSIFIED_AS`; port jurisdiction becomes
+`LOCATED_IN`; and HS hierarchy becomes `PARENT_OF`. Every projected node and relationship retains an
+evidence/provenance link to its normalized record. Relationships without an observed or derived
+quantitative coefficient remain semantic graph edges and are not used as simulation coefficients.

@@ -5,8 +5,27 @@
     "/api/v1/simulations/execute": {
       "post": {
         "operationId": "executeDeterministicIndustrialSimulation",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/simulation-contract-v1.json#/$defs/SimulationRequest" } } } },
-        "responses": { "200": { "description": "Deterministic turn snapshots and final state", "content": { "application/json": { "schema": { "$ref": "../schemas/simulation-contract-v1.json#/$defs/SimulationResult" } } } }, "422": { "description": "Invalid state graph or bounded input" } }
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "oneOf": [{ "$ref": "../schemas/simulation-contract-v1.json#/$defs/SimulationRequest" }, { "$ref": "../schemas/simulation-contract-v1.json#/$defs/GraphSimulationRequest" }] } } } },
+        "responses": {
+          "200": {
+            "description": "Deterministic turn snapshots and final state",
+            "content": { "application/json": { "schema": { "oneOf": [
+              { "$ref": "../schemas/simulation-contract-v1.json#/$defs/SimulationResult" },
+              { "$ref": "../schemas/simulation-contract-v1.json#/$defs/GraphSimulationResult" }
+            ] } } }
+          },
+          "422": { "description": "Invalid state graph or bounded input" }
+        }
+      }
+    },
+    "/api/v1/scenarios/interpret": {
+      "post": {
+        "operationId": "extractStructuredScenarioCandidate",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "../schemas/scenario-workflow-contract-v1.json#/$defs/ScenarioQuery" } } } },
+        "responses": {
+          "200": { "description": "Natural language extracted without entity resolution or numerical propagation", "content": { "application/json": { "schema": { "$ref": "../schemas/scenario-workflow-contract-v1.json#/$defs/ScenarioCandidate" } } } },
+          "422": { "description": "OpenAI structured extraction unavailable or invalid" }
+        }
       }
     },
     "/api/v1/retrieval/documents": {

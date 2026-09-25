@@ -132,4 +132,24 @@ public class NormalizedExternalRecord {
   public String getFingerprint() {
     return fingerprint;
   }
+
+  public IngestionRun getRun() { return run; }
+  public RawIngestionPayload getRawPayload() { return rawPayload; }
+  public SourceSystem getSourceSystem() { return sourceSystem; }
+  public String getRecordType() { return recordType; }
+  public String getNaturalKey() { return naturalKey; }
+  public String getCountryCode() { return countryCode; }
+  public String getCountryCodeScheme() { return countryCodeScheme; }
+  public String getClassificationCode() { return classificationCode; }
+  public String getClassificationVersion() { return classificationVersion; }
+  public String getCurrencyCode() { return currencyCode; }
+  public String getUnitCode() { return unitCode; }
+  public LocalDate getPeriodStart() { return periodStart; }
+  public LocalDate getPeriodEnd() { return periodEnd; }
+  public Instant getObservedAt() { return observedAt; }
+  public String getDataVersion() { return dataVersion; }
+  public JsonNode getDimensions() { return dimensions; }
+  public JsonNode getValue() { return value; }
+  public JsonNode getProvenance() { return provenance; }
+  public Instant getCreatedAt() { return createdAt; }
 }

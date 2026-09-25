@@ -11,8 +11,8 @@ body { margin: 0; }
 
 main {
   min-height: 100vh;
-  display: grid;
-  place-content: center;
+  max-width: 1180px;
+  margin: 0 auto;
   padding: 3rem;
   background: radial-gradient(circle at 20% 10%, #173653, transparent 42%);
 }
@@ -36,3 +36,35 @@ ul { padding-left: 1.2rem; line-height: 1.9; }
 .status-card p { margin: 0 0 0.5rem; }
 .status-card small { color: #8fa9bd; }
 
+.demo { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #29445c; }
+.demo-heading { display: flex; align-items: end; justify-content: space-between; gap: 2rem; }
+.demo-heading h2 { margin: 0; font-size: clamp(1.7rem, 4vw, 2.6rem); }
+.demo-heading p { color: #b6c8d8; }
+button { border: 0; border-radius: 999px; padding: .8rem 1.2rem; color: #06111b; background: #71e5c1; font-weight: 800; cursor: pointer; white-space: nowrap; }
+button:disabled { cursor: progress; opacity: .6; }
+.scenario-input { width: min(32rem, 100%); display: grid; gap: .55rem; }
+.scenario-input label, .mapping-card span { color: #8fa9bd; font-size: .78rem; }
+textarea { width: 100%; min-height: 6rem; resize: vertical; border: 1px solid #36566f; border-radius: .75rem; padding: .8rem; color: #eef7ff; background: #0b1825; font: inherit; line-height: 1.45; }
+textarea:focus { outline: 2px solid #71e5c1; outline-offset: 2px; }
+.mapping-card { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.5rem; padding: 1rem; border: 1px solid #36566f; border-radius: .8rem; background: rgb(23 54 83 / 35%); }
+.mapping-card div { display: grid; gap: .25rem; min-width: 0; }
+.mapping-card strong { overflow-wrap: anywhere; }
+.mapping-card .mapping-wide { grid-column: 1 / -1; }
+.branch-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+.branch { padding: 1.2rem; border: 1px solid #29445c; border-radius: .8rem; background: rgb(8 17 29 / 75%); }
+.branch-title { display: flex; justify-content: space-between; align-items: start; gap: .5rem; }
+.branch h3 { margin: 0; }
+.branch dl { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin: 1.2rem 0; }
+.branch dl div { min-width: 0; }
+.branch dt { color: #8fa9bd; font-size: .78rem; }
+.branch dd { margin: .2rem 0 0; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.branch small, .run-id { color: #8fa9bd; overflow-wrap: anywhere; }
+.pill { border-radius: 999px; padding: .25rem .5rem; font-size: .7rem; white-space: nowrap; }
+.pill.ok { color: #71e5c1; background: rgb(113 229 193 / 10%); }
+.pill.bad { color: #ff8b8b; background: rgb(255 139 139 / 10%); }
+@media (max-width: 760px) {
+  main { padding: 1.5rem; }
+  .demo-heading { align-items: stretch; flex-direction: column; }
+  .branch-grid { grid-template-columns: 1fr; }
+  .mapping-card { grid-template-columns: 1fr 1fr; }
+}

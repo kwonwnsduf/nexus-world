@@ -60,6 +60,12 @@ nexus:
       ilostat: ${ILOSTAT_BASE_URL:https://rplumber.ilo.org/data/indicator}
       kosis: ${KOSIS_BASE_URL:https://kosis.kr/openapi}
       oecd: ${OECD_SDMX_BASE_URL:https://sdmx.oecd.org/public/rest}
+    schedule:
+      enabled: ${INGESTION_SCHEDULE_ENABLED:false}
+      actor-id: ${INGESTION_SCHEDULE_ACTOR_ID:}
+      poll-delay: ${INGESTION_SCHEDULE_POLL_DELAY:PT1M}
+      sources-json: '${INGESTION_SCHEDULE_SOURCES_JSON:{}}'
+      sources: {}
   graph:
     enabled: ${NEO4J_ENABLED:false}
     uri: ${NEO4J_URI:bolt://localhost:7687}

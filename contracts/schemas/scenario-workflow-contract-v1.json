@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-world.local/contracts/scenario-workflow-contract-v1.json",
+  "title": "NEXUS WORLD grounded scenario workflow v2",
+  "$defs": {
+    "ScenarioQuery": {
+      "type": "object", "additionalProperties": false, "required": ["query"],
+      "properties": { "query": { "type": "string", "minLength": 3, "maxLength": 500 } }
+    },
+    "ScenarioCandidate": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contractVersion", "originalQuery", "target", "metric", "changeType", "change", "duration", "optionalPolicy", "confidence"],
+      "properties": {
+        "contractVersion": { "const": "v2" },
+        "originalQuery": { "type": "string" },
+        "target": { "type": "string", "minLength": 1 },
+        "metric": { "enum": ["SUPPLY", "PRODUCTION", "CAPACITY", "DEMAND", "LOGISTICS"] },
+        "changeType": { "const": "PERCENT" },
+        "change": { "type": "number", "minimum": -1, "maximum": 1 },
+        "duration": { "type": ["integer", "null"], "minimum": 1, "maximum": 120 },
+        "optionalPolicy": { "type": ["string", "null"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "ShockDefinition": {
+      "type": "object", "additionalProperties": false,
+      "required": ["targetEntityId", "targetNaturalKey", "metric", "change", "duration", "basisType"],
+      "properties": {
+        "targetEntityId": { "type": "string", "format": "uuid" },
+        "targetNaturalKey": { "type": "string" },
+        "metric": { "type": "string" },
+        "change": { "type": "number" },
+        "duration": { "type": ["integer", "null"] },
+        "basisType": { "enum": ["OBSERVED", "DERIVED", "ASSUMPTION", "USER_ASSUMPTION", "MODEL_DERIVED"] }
+      }
+    },
+    "ScenarioWorkflowResult": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contractVersion", "status", "worldVersionId", "extraction", "target", "shock", "worldManifest", "provenance", "graphRag", "dataQuality", "simulation"],
+      "properties": {
+        "contractVersion": { "const": "v2" },
+        "status": { "enum": ["COMPLETED", "INSUFFICIENT_DATA"] },
+        "worldVersionId": { "type": "string", "format": "uuid" },
+        "extraction": { "$ref": "#/$defs/ScenarioCandidate" },
+        "target": { "type": "object" },
+        "shock": { "$ref": "#/$defs/ShockDefinition" },
+        "worldManifest": { "type": "object" },
+        "provenance": { "type": "object" },
+        "graphRag": { "$ref": "graphrag-contract-v1.json#/$defs/GraphRagResult" },
+        "dataQuality": { "type": "object" },
+        "simulation": {
+          "oneOf": [
+            { "$ref": "simulation-contract-v1.json#/$defs/ParallelResult" },
+            { "type": "null" }
+          ]
+        }
+      }
+    }
+  }
+}

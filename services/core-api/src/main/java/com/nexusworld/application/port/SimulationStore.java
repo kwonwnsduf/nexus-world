@@ -8,6 +8,8 @@ import java.util.UUID;
 
 public interface SimulationStore {
   WorldVersion createWorld(String name, JsonNode state, Instant now);
+  WorldVersion createNextWorldVersion(String worldName, JsonNode state, Instant now);
+  boolean hasWorldSnapshot(String worldName, String snapshotFingerprint);
   WorldVersion getWorldVersion(UUID versionId);
   ParallelSetup createParallelSetup(UUID versionId, String scenarioName,
       List<BranchInput> branches, Instant now);

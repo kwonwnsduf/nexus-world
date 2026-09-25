@@ -88,4 +88,8 @@ public class RawIngestionPayload {
   public String getRequestUri() {
     return requestUri;
   }
+
+  public String getSourceVersion() { return sourceVersion; }
+  public Instant getRetrievedAt() { return retrievedAt; }
+  public String getContentSha256() { return contentSha256; }
 }

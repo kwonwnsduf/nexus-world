@@ -48,7 +48,7 @@ class DatabaseMigrationIntegrationTest {
     MigrateResult firstRun = flyway.migrate();
     MigrateResult secondRun = flyway.migrate();
 
-    assertThat(firstRun.migrationsExecuted).isEqualTo(14);
+    assertThat(firstRun.migrationsExecuted).isEqualTo(15);
     assertThat(secondRun.migrationsExecuted).isZero();
     assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 
@@ -382,11 +382,15 @@ class DatabaseMigrationIntegrationTest {
     var store = new JdbcSimulationStore(new org.springframework.jdbc.core.JdbcTemplate(dataSource),
         new ObjectMapper());
     var state = new ObjectMapper().readTree("""
-        {"companies":[{"companyId":"c1"}],"supplyLinks":[]}
+        {"companies":[{"companyId":"c1"}],"supplyLinks":[],"manifest":{
+          "snapshotFingerprint":"snapshot-1","retrievalIndexStatus":"READY",
+          "retrievalDocumentCount":1,"createdAt":"2026-01-01T00:00:00Z"}}
         """);
     var created = store.createWorld("Store integration world", state,
         Instant.parse("2026-01-01T00:00:00Z"));
     assertThat(store.getWorldVersion(created.versionId()).state()).isEqualTo(state);
+    assertThat(store.hasWorldSnapshot("Store integration world", "snapshot-1")).isTrue();
+    assertThat(store.hasWorldSnapshot("Store integration world", "missing")).isFalse();
     try (Connection connection = POSTGRES.createConnection("")) {
       assertThatThrownBy(() -> execute(connection,
           "UPDATE world_versions SET state='{}'::jsonb WHERE id=?", created.versionId()))

@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,19 @@ public class ProvenanceService {
         return sources.save(s);
     }
     @Transactional(readOnly=true) public DataSource getSource(UUID id){return source(id);}
+    @Transactional(readOnly=true) public DataSource getSourceByKey(String key){
+        return sources.findBySourceKey(key).orElseThrow(()->new ResourceNotFoundException("Source not found"));
+    }
+    @Transactional(readOnly=true) public Optional<DataSource> findSourceByKey(String key){
+        return sources.findBySourceKey(key);
+    }
+    @Transactional(readOnly=true) public EvidenceItem firstEvidenceForSource(UUID sourceId){
+        return evidence.findFirstBySource_IdOrderByCreatedAtAsc(sourceId)
+                .orElseThrow(()->new ResourceNotFoundException("Evidence not found"));
+    }
+    @Transactional(readOnly=true) public Optional<EvidenceItem> findFirstEvidenceForSource(UUID sourceId){
+        return evidence.findFirstBySource_IdOrderByCreatedAtAsc(sourceId);
+    }
 
     @Transactional
     public EvidenceItem createEvidence(UUID sourceId,EvidenceType evidenceType,String claimText,JsonNode locator,

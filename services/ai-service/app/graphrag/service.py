@@ -14,6 +14,7 @@ from app.graphrag.models import (
     RankedPath,
 )
 from app.graphrag.repository import GraphRepository
+from app.retrieval.embedding import EmbeddingConfigurationError, EmbeddingServiceError
 from app.retrieval.models import SearchMode
 from app.retrieval.service import RetrievalService
 
@@ -44,11 +45,22 @@ class GraphRagService:
         ranked = self._rank_paths(query, candidates)[:path_limit]
         evidence = self._collect_evidence(item.path for item in ranked)
         expansion = self._expansion(query, roots, ranked)
-        text_hits = tuple(
-            self.retrieval.search(
-                expansion, SearchMode.KEYWORD, evidence_limit, rerank=True
+        # Graph terms are useful lexical anchors, while the original question often
+        # carries semantic intent that is not an exact token match. Fuse both signals.
+        # A missing/temporarily unavailable embedding provider must not make graph
+        # evidence unusable, so keyword retrieval remains the deterministic fallback.
+        try:
+            text_hits = tuple(
+                self.retrieval.search(
+                    expansion, SearchMode.HYBRID, evidence_limit, rerank=True
+                )
             )
-        )
+        except (EmbeddingConfigurationError, EmbeddingServiceError):
+            text_hits = tuple(
+                self.retrieval.search(
+                    expansion, SearchMode.KEYWORD, evidence_limit, rerank=True
+                )
+            )
         return GraphRagResult(
             roots=tuple(roots),
             paths=tuple(ranked),

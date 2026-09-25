@@ -48,6 +48,14 @@ public class OpenDartAdapter extends AdapterSupport {
             "OpenDART error " + status + ": " + root.path("message").asText());
       total = Math.max(1, root.path("total_page").asInt(1));
     }
+    String corpCode = text(q, "corpCode");
+    if (corpCode != null && q.path("includeCompanyProfile").asBoolean(true)) {
+      Map<String, String> profile = new LinkedHashMap<>();
+      profile.put("crtfc_key", p.opendartApiKey());
+      profile.put("corp_code", corpCode);
+      pages.add(http.get(UriTools.build(p.endpoints().opendart(), "/api/company.json", profile),
+          pages.size() + 1, "OpenDART-company-v1", Map.of("Accept", "application/json"), 4));
+    }
     return pages;
   }
 
@@ -60,8 +68,10 @@ public class OpenDartAdapter extends AdapterSupport {
   }
 
   public List<ParsedRecord> parse(FetchedPage page, JsonNode q) {
+    JsonNode root = json(page);
+    if (root.has("corp_name_eng")) return parseCompanyProfile(root, page);
     List<ParsedRecord> out = new ArrayList<>();
-    for (JsonNode n : json(page).path("list")) {
+    for (JsonNode n : root.path("list")) {
       String receipt = text(n, "rcept_no");
       String filed = text(n, "rcept_dt");
       out.add(
@@ -89,5 +99,18 @@ public class OpenDartAdapter extends AdapterSupport {
               n));
     }
     return out;
+  }
+
+  private List<ParsedRecord> parseCompanyProfile(JsonNode profile, FetchedPage page) {
+    String corpCode = text(profile, "corp_code");
+    String koreanName = text(profile, "corp_name");
+    String englishName = text(profile, "corp_name_eng");
+    if (corpCode == null || koreanName == null) return List.of();
+    return List.of(record("OPENDART_COMPANY_PROFILE", corpCode, "KR", "ISO-3166-1-alpha-2",
+        "COMPANY_PROFILE", "OpenDART", null, null, null, null, null, page.sourceVersion(),
+        dimensions("corpCode", corpCode, "corpName", koreanName, "corpNameEng", englishName,
+            "stockCode", text(profile, "stock_code"), "ceoName", text(profile, "ceo_nm"),
+            "industryCode", text(profile, "induty_code")),
+        profile, profile));
   }
 }

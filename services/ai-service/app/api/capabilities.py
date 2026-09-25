@@ -16,6 +16,7 @@ class CapabilitiesResponse(BaseModel):
         "retrieval",
         "agent-orchestration",
         "population-synthesis",
+        "scenario-interpretation",
         "deterministic-simulation",
     )
 
@@ -23,4 +24,3 @@ class CapabilitiesResponse(BaseModel):
 @router.get("/capabilities", response_model=CapabilitiesResponse)
 def capabilities() -> CapabilitiesResponse:
     return CapabilitiesResponse()
-

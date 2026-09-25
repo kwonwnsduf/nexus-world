@@ -34,7 +34,10 @@ reports whether reranking was applied. Payload definitions live in `contracts/sc
 
 GraphRAG uses `POST /api/v1/graphrag/query` with a world version and a bounded free-text query. Core API resolves indexed
 PostgreSQL exact-alias, trigram, and FTS candidates, then the AI service requests one-to-three-hop Neo4j paths and returns
-ranked paths, graph evidence, and Day 17 text citations under `contracts/schemas/graphrag-contract-v1.json`.
+ranked paths, graph evidence, and Day 17 text citations under `contracts/schemas/graphrag-contract-v1.json`. Its text
+evidence stage uses `hybrid` retrieval by default (keyword + embedding candidates with reciprocal-rank fusion and the
+deterministic reranker). If the embedding provider is unavailable, GraphRAG falls back to keyword retrieval while the
+standalone `/retrieval/search` endpoint still reports embedding errors for explicitly requested vector/hybrid searches.
 
 ## Deterministic simulation and parallel worlds v1
 
@@ -42,3 +45,17 @@ The AI service exposes `POST /api/v1/simulations/execute` for bounded determinis
 `POST /api/v1/worlds`, `POST /api/v1/world-versions/{versionId}/parallel-simulations`, and
 `GET /api/v1/parallel-simulations/{scenarioId}`. Payload constraints are defined in
 `contracts/schemas/simulation-contract-v1.json`. Public callers cannot overwrite a baseline or write a turn snapshot.
+
+Relationship-graph simulations accept optional `graphTraversal`. `WORLD_VERSION` keeps the immutable world snapshot as
+the execution topology. `NEO4J_PATHS` resolves each shocked entity to the same-version Neo4j projection, reads bounded
+one-to-three-hop paths, and sends only grounded quantitative edges on those paths to the deterministic engine. Each
+snapshot returns a traversal trace showing the A→B and B→C relationship calculations. Neo4j topology never supplies a
+coefficient by itself: an edge must match a world-version quantitative edge or contain a provenance-bearing
+`parameters.dependencyRatio` in its projected attributes.
+
+Phase 1 adds `POST /api/v1/scenario-runs/from-query`. AI uses OpenAI structured output only to extract a target,
+metric, percentage change, duration and optional policy. Core resolves the target in the latest data-built immutable
+World Version, invokes GraphRAG against that exact version, classifies the shock as a user assumption, and runs the
+existing parallel contract only when the quantitative baseline and value-level provenance are complete. Otherwise it
+returns `INSUFFICIENT_DATA` with graph paths, citations and missing coverage instead of inventing coefficients. The v2
+payload remains in `contracts/schemas/scenario-workflow-contract-v1.json` so the route name stays stable.
