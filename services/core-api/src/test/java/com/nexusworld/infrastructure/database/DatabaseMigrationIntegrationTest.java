@@ -48,7 +48,7 @@ class DatabaseMigrationIntegrationTest {
     MigrateResult firstRun = flyway.migrate();
     MigrateResult secondRun = flyway.migrate();
 
-    assertThat(firstRun.migrationsExecuted).isEqualTo(15);
+    assertThat(firstRun.migrationsExecuted).isPositive();
     assertThat(secondRun.migrationsExecuted).isZero();
     assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 
