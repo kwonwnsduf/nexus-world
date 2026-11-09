@@ -15,6 +15,7 @@ import org.junit.jupiter.api.*;
 
 class EntityResolutionServiceTest {
   private final EntityResolutionKeyRepository keys = mock(EntityResolutionKeyRepository.class);
+  private final EntityNameAliasRepository aliases = mock(EntityNameAliasRepository.class);
   private final WorldGraphEntityRepository entities = mock(WorldGraphEntityRepository.class);
   private final OntologyService ontology = mock(OntologyService.class);
   private final UUID world = UUID.randomUUID(), actor = UUID.randomUUID();
@@ -22,8 +23,9 @@ class EntityResolutionServiceTest {
   private EntityResolutionService service;
 
   @BeforeEach void setUp() {
-    service = new EntityResolutionService(keys, entities, ontology,
+    service = new EntityResolutionService(keys, aliases, entities, ontology,
         Clock.fixed(Instant.parse("2026-09-14T00:00:00Z"), ZoneOffset.UTC));
+    when(aliases.findByWorldVersionIdAndEntityType(any(), any())).thenReturn(List.of());
     when(keys.findByWorldVersionIdAndEntityTypeAndKeySchemeAndNormalizedValue(any(), any(), any(), any()))
         .thenReturn(Optional.empty());
     when(keys.save(any())).thenAnswer(call -> call.getArgument(0));
